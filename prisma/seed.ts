@@ -17,8 +17,8 @@ async function main() {
   });
   console.log({ adminUser });
 
-  // Seed Retailers
-  const customer1 = await prisma.customer.upsert({
+  // Seed Customers
+  await prisma.customer.upsert({
     where: { email: 'ahmed@farsimarket.com' },
     update: {},
     create: {
@@ -31,9 +31,6 @@ async function main() {
       joinDate: new Date('2023-01-15'),
     },
   });
-
-  // Use the variable
-  console.log('Upserted customer:', customer1);
 
   await prisma.customer.upsert({
     where: { email: 'fatima@zahranishop.com' },
@@ -49,10 +46,10 @@ async function main() {
     },
   });
 
-  console.log('Retailers seeded');
+  console.log('Customers seeded');
 
-  // Seed Vendors
-  const merchant1 = await prisma.merchant.upsert({
+  // Seed Merchants
+  await prisma.merchant.upsert({
     where: { email: 'mohammed@khandates.com' },
     update: {},
     create: {
@@ -66,8 +63,6 @@ async function main() {
       joinDate: new Date('2023-03-10'),
     },
   });
-  console.log('Upserted merchant:', merchant1);
-
 
   await prisma.merchant.upsert({
     where: { email: 'aisha@abdullahspices.com' },
@@ -84,7 +79,7 @@ async function main() {
     },
   });
 
-  console.log('Vendors seeded');
+  console.log('Merchants seeded');
 
   // Seed Leads
   await prisma.lead.createMany({

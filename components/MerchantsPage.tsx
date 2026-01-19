@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createMerchant, updateMerchant } from '@/lib/actions';
+import { uploadMerchantsCSV } from '@/lib/csvUpload';
 
 interface Merchant {
   id: number;
@@ -79,11 +80,55 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
     }
   };
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsLoading(true);
+    try {
+      const text = await file.text();
+      const result = await uploadMerchantsCSV(text);
+      
+      if (result.success) {
+        alert(`CSV imported successfully!\n\nNew records: ${result.imported}\nUpdated records: ${result.updated}\nErrors: ${result.errors}`);
+        router.refresh();
+      } else {
+        alert('Failed to import CSV: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error uploading CSV:', error);
+      alert('Failed to upload CSV');
+    } finally {
+      setIsLoading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Merchants</h1>
-        <button onClick={() => handleOpenModal()} disabled={isLoading} className="px-4 py-2 bg-primary text-white font-bold rounded-md hover:bg-green-700 disabled:opacity-50">Add Merchant</button>
+        <div className="flex gap-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleCSVUpload}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading}
+            className="px-4 py-2 bg-blue-600 text-white font-bold rounded-md hover:bg-blue-700 disabled:opacity-50"
+          >
+            Upload CSV
+          </button>
+          <button onClick={() => handleOpenModal()} disabled={isLoading} className="px-4 py-2 bg-primary text-white font-bold rounded-md hover:bg-green-700 disabled:opacity-50">Add Merchant</button>
+        </div>
       </div>
 
       <div className="bg-white border border-gray-200 shadow-sm rounded-lg overflow-x-auto">

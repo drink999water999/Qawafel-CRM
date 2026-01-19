@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createLead, updateLead, deleteLead } from '@/lib/actions';
+import { uploadLeadsCSV } from '@/lib/csvUpload';
 
 interface Lead {
   id: number;
@@ -100,6 +101,34 @@ export default function LeadsPage({ leads }: LeadsPageProps) {
     }
   };
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsLoading(true);
+    try {
+      const text = await file.text();
+      const result = await uploadLeadsCSV(text);
+      
+      if (result.success) {
+        alert(`CSV imported successfully!\n\nNew records: ${result.imported}\nUpdated records: ${result.updated}\nErrors: ${result.errors}`);
+        router.refresh();
+      } else {
+        alert('Failed to import CSV: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error uploading CSV:', error);
+      alert('Failed to upload CSV');
+    } finally {
+      setIsLoading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   const statusColors: Record<string, string> = {
     New: 'bg-blue-100 text-blue-800',
     Contacted: 'bg-yellow-100 text-yellow-800',
@@ -115,16 +144,35 @@ export default function LeadsPage({ leads }: LeadsPageProps) {
           <h1 className="text-3xl font-bold text-gray-800">Leads</h1>
           <p className="mt-1 text-gray-500">Manage your sales prospects</p>
         </div>
-        <button
-          onClick={() => handleOpenModal()}
-          disabled={isLoading}
-          className="px-4 py-2 bg-primary text-white font-bold rounded-md hover:bg-green-700 flex items-center disabled:opacity-50"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-          </svg>
-          Add Lead
-        </button>
+        <div className="flex gap-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleCSVUpload}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading}
+            className="px-4 py-2 bg-blue-600 text-white font-bold rounded-md hover:bg-blue-700 flex items-center disabled:opacity-50"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+            </svg>
+            Upload CSV
+          </button>
+          <button
+            onClick={() => handleOpenModal()}
+            disabled={isLoading}
+            className="px-4 py-2 bg-primary text-white font-bold rounded-md hover:bg-green-700 flex items-center disabled:opacity-50"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Add Lead
+          </button>
+        </div>
       </div>
 
       <div className="bg-white border border-gray-200 shadow-sm rounded-lg overflow-x-auto">
