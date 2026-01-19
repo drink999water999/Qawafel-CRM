@@ -18,7 +18,7 @@ async function main() {
   console.log({ adminUser });
 
   // Seed Retailers
-  const retailer1 = await prisma.retailer.upsert({
+  const customer1 = await prisma.customer.upsert({
     where: { email: 'ahmed@farsimarket.com' },
     update: {},
     create: {
@@ -32,27 +32,27 @@ async function main() {
     },
   });
 
-  const retailer2 = await prisma.retailer.upsert({
-  where: { email: 'fatima@zahranishop.com' },
-  update: {},
-  create: {
-    name: 'Fatima',
-    email: 'fatima@zahranishop.com',
-    phone: '123456789',
-    accountStatus: 'active',
-    marketplaceStatus: 'enabled',
-    joinDate: new Date(),
-    company: 'Zahrani Shop',
-  },
-});
+  // Use the variable
+  console.log('Upserted customer:', customer1);
 
-// Use the variable
-console.log('Upserted retailer:', retailer2);
+  await prisma.customer.upsert({
+    where: { email: 'fatima@zahranishop.com' },
+    update: {},
+    create: {
+      name: 'Fatima Al-Zahrani',
+      company: 'Zahrani Corner Shop',
+      email: 'fatima@zahranishop.com',
+      phone: '555-0102',
+      accountStatus: 'Active',
+      marketplaceStatus: 'Retained',
+      joinDate: new Date('2023-02-20'),
+    },
+  });
 
   console.log('Retailers seeded');
 
   // Seed Vendors
-  const vendor1 = await prisma.vendor.upsert({
+  const merchant1 = await prisma.merchant.upsert({
     where: { email: 'mohammed@khandates.com' },
     update: {},
     create: {
@@ -66,8 +66,10 @@ console.log('Upserted retailer:', retailer2);
       joinDate: new Date('2023-03-10'),
     },
   });
+  console.log('Upserted merchant:', merchant1);
 
-  const vendor2 = await prisma.vendor.upsert({
+
+  await prisma.merchant.upsert({
     where: { email: 'aisha@abdullahspices.com' },
     update: {},
     create: {
@@ -81,9 +83,6 @@ console.log('Upserted retailer:', retailer2);
       joinDate: new Date('2023-04-05'),
     },
   });
-
-  // Use the variable
-  console.log('Upserted vendor:', vendor2);
 
   console.log('Vendors seeded');
 
@@ -194,33 +193,6 @@ console.log('Upserted retailer:', retailer2);
   });
 
   console.log('Proposals seeded');
-
-  // Seed Tickets
-  await prisma.ticket.createMany({
-    data: [
-      {
-        title: 'Late delivery inquiry',
-        description: 'Our last order #12345 was delayed. Can we get an update?',
-        status: 'Open',
-        type: 'Support',
-        userId: retailer1.id,
-        userType: 'Retailer',
-        createdAt: new Date('2024-06-28'),
-      },
-      {
-        title: 'API for inventory management',
-        description: 'It would be great if vendors could integrate their inventory system via an API.',
-        status: 'In Progress',
-        type: 'Feature Request',
-        userId: vendor1.id,
-        userType: 'Vendor',
-        createdAt: new Date('2024-06-25'),
-      },
-    ],
-    skipDuplicates: true,
-  });
-
-  console.log('Tickets seeded');
 
   // Seed Activities
   await prisma.activity.createMany({

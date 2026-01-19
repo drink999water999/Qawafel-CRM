@@ -20,7 +20,7 @@ model User {
   @@map("users")
 }
 
-model Retailer {
+model Customer {
   id                Int       @id @default(autoincrement())
   name              String
   email             String    @unique
@@ -30,13 +30,12 @@ model Retailer {
   joinDate          DateTime  @map("join_date") @db.Date
   company           String
 
-  tickets    Ticket[]
   activities Activity[]
 
-  @@map("retailers")
+  @@map("customers")
 }
 
-model Vendor {
+model Merchant {
   id                Int       @id @default(autoincrement())
   name              String
   email             String    @unique
@@ -47,10 +46,9 @@ model Vendor {
   businessName      String    @map("business_name")
   category          String
 
-  tickets    Ticket[]
   activities Activity[]
 
-  @@map("vendors")
+  @@map("merchants")
 }
 
 model Lead {
@@ -97,22 +95,6 @@ model Proposal {
   @@map("proposals")
 }
 
-model Ticket {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String
-  status      String
-  type        String
-  userId      Int      @map("user_id")
-  userType    String   @map("user_type")
-  createdAt   DateTime @map("created_at") @db.Date
-
-  retailer Retailer? @relation(fields: [userId], references: [id], map: "fk_retailer")
-  vendor   Vendor?   @relation(fields: [userId], references: [id], map: "fk_vendor")
-
-  @@map("tickets")
-}
-
 model Activity {
   id        Int     @id @default(autoincrement())
   text      String
@@ -121,8 +103,8 @@ model Activity {
   userId    Int?    @map("user_id")
   userType  String? @map("user_type")
 
-  retailer Retailer? @relation(fields: [userId], references: [id], map: "fk_activity_retailer")
-  vendor   Vendor?   @relation(fields: [userId], references: [id], map: "fk_activity_vendor")
+  customer Customer? @relation(fields: [userId], references: [id], map: "fk_activity_customer")
+  merchant Merchant? @relation(fields: [userId], references: [id], map: "fk_activity_merchant")
 
   @@map("activities")
 }

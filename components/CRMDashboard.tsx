@@ -6,8 +6,8 @@ import Header from './Header';
 import Dashboard from './Dashboard';
 import LeadsPage from './LeadsPage';
 import DealsPage from './DealsPage';
-import VendorsPage from './VendorsPage';
-import RetailersPage from './RetailersPage';
+import MerchantsPage from './MerchantsPage';
+import CustomersPage from './CustomersPage';
 import ProposalsPage from './ProposalsPage';
 import SettingsPage from './SettingsPage';
 
@@ -21,10 +21,9 @@ interface UserProfile {
 interface CRMData {
   leads: Lead[];
   deals: Deal[];
-  vendors: Vendor[];
-  retailers: Retailer[];
+  merchants: Merchant[];
+  customers: Customer[];
   proposals: Proposal[];
-  tickets: unknown[];
   activities: Activity[];
   userProfile: UserProfile | null;
 }
@@ -54,7 +53,7 @@ interface Deal {
   closeDate: string | Date;
 }
 
-interface Vendor {
+interface Merchant {
   id: number;
   name: string;
   businessName: string;
@@ -66,7 +65,7 @@ interface Vendor {
   joinDate?: Date;
 }
 
-interface Retailer {
+interface Customer {
   id: number;
   name: string;
   company: string;
@@ -106,21 +105,21 @@ export default function CRMDashboard({ initialData }: CRMDashboardProps) {
   const renderPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard data={initialData} />;
+        return <Dashboard data={initialData} setCurrentPage={setCurrentPage} />;
       case 'leads':
         return <LeadsPage leads={initialData.leads} />;
       case 'deals':
         return <DealsPage deals={initialData.deals} />;
-      case 'vendors':
-        return <VendorsPage vendors={initialData.vendors} />;
-      case 'retailers':
-        return <RetailersPage retailers={initialData.retailers} />;
+      case 'merchants':
+        return <MerchantsPage merchants={initialData.merchants} />;
+      case 'customers':
+        return <CustomersPage customers={initialData.customers} />;
       case 'proposals':
         return <ProposalsPage proposals={initialData.proposals} />;
       case 'settings':
         return <SettingsPage profile={initialData.userProfile} />;
       default:
-        return <Dashboard data={initialData} />;
+        return <Dashboard data={initialData} setCurrentPage={setCurrentPage} />;
     }
   };
 

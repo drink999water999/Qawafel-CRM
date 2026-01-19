@@ -3,14 +3,14 @@
 import { revalidatePath } from 'next/cache';
 import prisma from './prisma';
 
-// ============== RETAILERS ==============
-export async function getRetailers() {
-  return await prisma.retailer.findMany({
+// ============== CUSTOMERS ==============
+export async function getCustomers() {
+  return await prisma.customer.findMany({
     orderBy: { id: 'asc' },
   });
 }
 
-export async function createRetailer(data: {
+export async function createCustomer(data: {
   name: string;
   company: string;
   email: string;
@@ -18,17 +18,17 @@ export async function createRetailer(data: {
   accountStatus: string;
   marketplaceStatus: string;
 }) {
-  const retailer = await prisma.retailer.create({
+  const customer = await prisma.customer.create({
     data: {
       ...data,
       joinDate: new Date(),
     },
   });
   revalidatePath('/');
-  return retailer;
+  return customer;
 }
 
-export async function updateRetailer(
+export async function updateCustomer(
   id: number,
   data: {
     name?: string;
@@ -39,22 +39,22 @@ export async function updateRetailer(
     marketplaceStatus?: string;
   }
 ) {
-  const retailer = await prisma.retailer.update({
+  const customer = await prisma.customer.update({
     where: { id },
     data,
   });
   revalidatePath('/');
-  return retailer;
+  return customer;
 }
 
-// ============== VENDORS ==============
-export async function getVendors() {
-  return await prisma.vendor.findMany({
+// ============== MERCHANTS ==============
+export async function getMerchants() {
+  return await prisma.merchant.findMany({
     orderBy: { id: 'asc' },
   });
 }
 
-export async function createVendor(data: {
+export async function createMerchant(data: {
   name: string;
   businessName: string;
   category: string;
@@ -63,17 +63,17 @@ export async function createVendor(data: {
   accountStatus: string;
   marketplaceStatus: string;
 }) {
-  const vendor = await prisma.vendor.create({
+  const merchant = await prisma.merchant.create({
     data: {
       ...data,
       joinDate: new Date(),
     },
   });
   revalidatePath('/');
-  return vendor;
+  return merchant;
 }
 
-export async function updateVendor(
+export async function updateMerchant(
   id: number,
   data: {
     name?: string;
@@ -85,12 +85,12 @@ export async function updateVendor(
     marketplaceStatus?: string;
   }
 ) {
-  const vendor = await prisma.vendor.update({
+  const merchant = await prisma.merchant.update({
     where: { id },
     data,
   });
   revalidatePath('/');
-  return vendor;
+  return merchant;
 }
 
 // ============== LEADS ==============
@@ -274,48 +274,6 @@ export async function deleteProposal(id: number) {
   revalidatePath('/');
 }
 
-// ============== TICKETS ==============
-export async function getTickets() {
-  return await prisma.ticket.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
-}
-
-export async function createTicket(data: {
-  title: string;
-  description: string;
-  status: string;
-  type: string;
-  userId: number;
-  userType: string;
-}) {
-  const ticket = await prisma.ticket.create({
-    data: {
-      ...data,
-      createdAt: new Date(),
-    },
-  });
-  revalidatePath('/');
-  return ticket;
-}
-
-export async function updateTicket(
-  id: number,
-  data: {
-    title?: string;
-    description?: string;
-    status?: string;
-    type?: string;
-  }
-) {
-  const ticket = await prisma.ticket.update({
-    where: { id },
-    data,
-  });
-  revalidatePath('/');
-  return ticket;
-}
-
 // ============== ACTIVITIES ==============
 export async function getActivities() {
   const activities = await prisma.activity.findMany({
@@ -368,25 +326,23 @@ export async function updateUserProfile(data: {
 // ============== INITIALIZATION ==============
 export async function initializeData() {
   // Run all queries in parallel for better performance
-  const [retailers, vendors, leads, deals, proposals, tickets, activities, userProfile] = 
+  const [customers, merchants, leads, deals, proposals, activities, userProfile] = 
     await Promise.all([
-      getRetailers(),
-      getVendors(),
+      getCustomers(),
+      getMerchants(),
       getLeads(),
       getDeals(),
       getProposals(),
-      getTickets(),
       getActivities(),
       getUserProfile(),
     ]);
 
   return {
-    retailers,
-    vendors,
+    customers,
+    merchants,
     leads,
     deals,
     proposals,
-    tickets,
     activities,
     userProfile,
   };

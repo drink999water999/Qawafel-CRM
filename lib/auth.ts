@@ -17,10 +17,16 @@ export async function login(username: string, password: string) {
       },
     });
 
+    console.log('Login attempt for:', username);
+    console.log('User found:', user ? 'Yes' : 'No');
+
     // Check if user exists and password matches
     if (!user || user.password !== password) {
+      console.log('Login failed - Invalid credentials');
       return { success: false, error: 'Invalid username or password' };
     }
+
+    console.log('Login successful for:', username);
 
     // Create session
     const cookieStore = await cookies();
@@ -39,7 +45,7 @@ export async function login(username: string, password: string) {
     return { success: true };
   } catch (error) {
     console.error('Login error:', error);
-    return { success: false, error: 'Login failed' };
+    return { success: false, error: 'Database connection failed. Make sure your database is running.' };
   }
 }
 
