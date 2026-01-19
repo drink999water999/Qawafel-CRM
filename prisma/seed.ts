@@ -33,18 +33,21 @@ async function main() {
   });
 
   const retailer2 = await prisma.retailer.upsert({
-    where: { email: 'fatima@zahranishop.com' },
-    update: {},
-    create: {
-      name: 'Fatima Al-Zahrani',
-      company: 'Zahrani Corner Shop',
-      email: 'fatima@zahranishop.com',
-      phone: '555-0102',
-      accountStatus: 'Active',
-      marketplaceStatus: 'Retained',
-      joinDate: new Date('2023-02-20'),
-    },
-  });
+  where: { email: 'fatima@zahranishop.com' },
+  update: {},
+  create: {
+    name: 'Fatima',
+    email: 'fatima@zahranishop.com',
+    phone: '123456789',
+    accountStatus: 'active',
+    marketplaceStatus: 'enabled',
+    joinDate: new Date(),
+    company: 'Zahrani Shop',
+  },
+});
+
+// Use the variable
+console.log('Upserted retailer:', retailer2);
 
   console.log('Retailers seeded');
 
@@ -78,6 +81,9 @@ async function main() {
       joinDate: new Date('2023-04-05'),
     },
   });
+
+  // Use the variable
+  console.log('Upserted vendor:', vendor2);
 
   console.log('Vendors seeded');
 

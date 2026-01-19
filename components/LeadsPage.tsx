@@ -4,14 +4,25 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createLead, updateLead, deleteLead } from '@/lib/actions';
 
+interface Lead {
+  id: number;
+  company: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  status: string;
+  source: string;
+  value: number | { toNumber?: () => number };
+}
+
 interface LeadsPageProps {
-  leads: any[];
+  leads: Lead[];
 }
 
 export default function LeadsPage({ leads }: LeadsPageProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingLead, setEditingLead] = useState<any>(null);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     company: '',
@@ -47,7 +58,7 @@ export default function LeadsPage({ leads }: LeadsPageProps) {
     }
   }, [editingLead]);
 
-  const handleOpenModal = (lead?: any) => {
+  const handleOpenModal = (lead?: Lead) => {
     setEditingLead(lead || null);
     setIsModalOpen(true);
   };

@@ -4,27 +4,32 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateUserProfile } from '@/lib/actions';
 
+interface UserProfile {
+  id: number;
+  fullName: string;
+  email: string;
+  phone: string;
+}
+
 interface SettingsPageProps {
-  profile: any;
+  profile: UserProfile | null;
 }
 
 export default function SettingsPage({ profile }: SettingsPageProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    companyName: '',
-    companyWebsite: '',
-    contactEmail: '',
-    contactPhone: '',
+    fullName: '',
+    email: '',
+    phone: '',
   });
 
   useEffect(() => {
     if (profile) {
       setFormData({
-        companyName: profile.companyName || '',
-        companyWebsite: profile.companyWebsite || '',
-        contactEmail: profile.contactEmail || '',
-        contactPhone: profile.contactPhone || '',
+        fullName: profile.fullName || '',
+        email: profile.email || '',
+        phone: profile.phone || '',
       });
     }
   }, [profile]);
@@ -52,23 +57,19 @@ export default function SettingsPage({ profile }: SettingsPageProps) {
       </div>
 
       <div className="bg-white border border-gray-200 shadow-sm rounded-lg p-6">
-        <h2 className="text-xl font-bold mb-6 text-gray-900">Company Information</h2>
+        <h2 className="text-xl font-bold mb-6 text-gray-900">Profile Information</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Company Name</label>
-            <input type="text" required value={formData.companyName} onChange={(e) => setFormData({ ...formData, companyName: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" />
+            <label className="block text-sm font-medium text-gray-700">Full Name</label>
+            <input type="text" required value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Company Website</label>
-            <input type="url" value={formData.companyWebsite} onChange={(e) => setFormData({ ...formData, companyWebsite: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" />
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <input type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Contact Email</label>
-            <input type="email" required value={formData.contactEmail} onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Contact Phone</label>
-            <input type="tel" value={formData.contactPhone} onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" />
+            <label className="block text-sm font-medium text-gray-700">Phone</label>
+            <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" />
           </div>
           <div className="pt-4">
             <button type="submit" disabled={isLoading} className="px-6 py-2 bg-primary text-white font-bold rounded-md hover:bg-green-700 disabled:opacity-50">

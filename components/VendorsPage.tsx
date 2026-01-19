@@ -4,14 +4,25 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createVendor, updateVendor } from '@/lib/actions';
 
+interface Vendor {
+  id: number;
+  name: string;
+  businessName: string;
+  category: string;
+  email: string;
+  phone: string | null;
+  accountStatus: string;
+  marketplaceStatus: string;
+}
+
 interface VendorsPageProps {
-  vendors: any[];
+  vendors: Vendor[];
 }
 
 export default function VendorsPage({ vendors }: VendorsPageProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingVendor, setEditingVendor] = useState<any>(null);
+  const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -39,7 +50,7 @@ export default function VendorsPage({ vendors }: VendorsPageProps) {
     }
   }, [editingVendor]);
 
-  const handleOpenModal = (vendor?: any) => {
+  const handleOpenModal = (vendor?: Vendor) => {
     setEditingVendor(vendor || null);
     setIsModalOpen(true);
   };

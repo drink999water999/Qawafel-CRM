@@ -4,14 +4,24 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createRetailer, updateRetailer } from '@/lib/actions';
 
+interface Retailer {
+  id: number;
+  name: string;
+  company: string;
+  email: string;
+  phone: string | null;
+  accountStatus: string;
+  marketplaceStatus: string;
+}
+
 interface RetailersPageProps {
-  retailers: any[];
+  retailers: Retailer[];
 }
 
 export default function RetailersPage({ retailers }: RetailersPageProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRetailer, setEditingRetailer] = useState<any>(null);
+  const [editingRetailer, setEditingRetailer] = useState<Retailer | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -37,7 +47,7 @@ export default function RetailersPage({ retailers }: RetailersPageProps) {
     }
   }, [editingRetailer]);
 
-  const handleOpenModal = (retailer?: any) => {
+  const handleOpenModal = (retailer?: Retailer) => {
     setEditingRetailer(retailer || null);
     setIsModalOpen(true);
   };

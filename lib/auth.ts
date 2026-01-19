@@ -59,7 +59,7 @@ export async function getSession() {
     }
 
     return JSON.parse(sessionCookie.value);
-  } catch (error) {
+  } catch {
     return null;
   }
 }

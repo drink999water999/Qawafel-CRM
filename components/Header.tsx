@@ -6,11 +6,12 @@ import { useRouter } from 'next/navigation';
 export default function Header() {
   const router = useRouter();
 
-  const handleLogout = async () => {
-    if (confirm('Are you sure you want to logout?')) {
-      await logout();
-    }
-  };
+const handleLogout = async () => {
+  if (confirm('Are you sure you want to logout?')) {
+    await logout(); // your logout function
+    router.push('/login'); // now router is used
+  }
+};
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">

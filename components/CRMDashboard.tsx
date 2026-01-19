@@ -11,8 +11,93 @@ import RetailersPage from './RetailersPage';
 import ProposalsPage from './ProposalsPage';
 import SettingsPage from './SettingsPage';
 
+interface UserProfile {
+  id: number;
+  fullName: string;
+  email: string;
+  phone: string;
+}
+
+interface CRMData {
+  leads: Lead[];
+  deals: Deal[];
+  vendors: Vendor[];
+  retailers: Retailer[];
+  proposals: Proposal[];
+  tickets: unknown[];
+  activities: Activity[];
+  userProfile: UserProfile | null;
+}
+
+interface Lead {
+  id: number;
+  company: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  status: string;
+  source: string;
+  value: number | { toNumber: () => number };
+  businessSize?: string | null;
+  numberOfBranches?: number | null;
+  formToken?: string | null;
+}
+
+interface Deal {
+  id: number;
+  title: string;
+  company: string;
+  contactName: string;
+  value: number | { toNumber: () => number };
+  stage: string;
+  probability: number;
+  closeDate: string | Date;
+}
+
+interface Vendor {
+  id: number;
+  name: string;
+  businessName: string;
+  category: string;
+  email: string;
+  phone: string | null;
+  accountStatus: string;
+  marketplaceStatus: string;
+  joinDate?: Date;
+}
+
+interface Retailer {
+  id: number;
+  name: string;
+  company: string;
+  email: string;
+  phone: string | null;
+  accountStatus: string;
+  marketplaceStatus: string;
+  joinDate?: Date;
+}
+
+interface Proposal {
+  id: number;
+  title: string;
+  clientName: string;
+  clientCompany: string;
+  value: number | { toNumber: () => number };
+  currency: string;
+  status: string;
+  validUntil: string | Date;
+  sentDate?: string | Date | null;
+}
+
+interface Activity {
+  id: number;
+  text: string;
+  timestamp: number;
+  icon: string;
+}
+
 interface CRMDashboardProps {
-  initialData: any;
+  initialData: CRMData;
 }
 
 export default function CRMDashboard({ initialData }: CRMDashboardProps) {

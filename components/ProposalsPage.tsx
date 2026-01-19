@@ -4,14 +4,26 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createProposal, updateProposal, deleteProposal } from '@/lib/actions';
 
+interface Proposal {
+  id: number;
+  title: string;
+  clientName: string;
+  clientCompany: string;
+  value: number | { toNumber?: () => number };
+  currency: string;
+  status: string;
+  validUntil: string | Date;
+  sentDate?: string | Date | null;
+}
+
 interface ProposalsPageProps {
-  proposals: any[];
+  proposals: Proposal[];
 }
 
 export default function ProposalsPage({ proposals }: ProposalsPageProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingProposal, setEditingProposal] = useState<any>(null);
+  const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -47,7 +59,7 @@ export default function ProposalsPage({ proposals }: ProposalsPageProps) {
     }
   }, [editingProposal]);
 
-  const handleOpenModal = (proposal?: any) => {
+  const handleOpenModal = (proposal?: Proposal) => {
     setEditingProposal(proposal || null);
     setIsModalOpen(true);
   };

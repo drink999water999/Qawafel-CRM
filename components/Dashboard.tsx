@@ -1,7 +1,28 @@
 'use client';
 
+interface Activity {
+  id: number;
+  text: string;
+  timestamp: number;
+  icon: string;
+}
+
+interface Deal {
+  id: number;
+  stage: string;
+  value: number | { toNumber?: () => number };
+}
+
+interface DashboardData {
+  leads?: unknown[];
+  deals?: Deal[];
+  vendors?: unknown[];
+  retailers?: unknown[];
+  activities?: Activity[];
+}
+
 interface DashboardProps {
-  data: any;
+  data: DashboardData;
 }
 
 export default function Dashboard({ data }: DashboardProps) {
@@ -14,7 +35,7 @@ export default function Dashboard({ data }: DashboardProps) {
     },
     {
       label: 'Active Deals',
-      value: data.deals?.filter((d: any) => d.stage !== 'Lost' && d.stage !== 'Closed Won').length || 0,
+      value: data.deals?.filter((d) => d.stage !== 'Lost' && d.stage !== 'Closed Won').length || 0,
       icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
       color: 'bg-green-500',
     },
@@ -32,7 +53,7 @@ export default function Dashboard({ data }: DashboardProps) {
     },
   ];
 
-  const totalDealsValue = data.deals?.reduce((sum: number, deal: any) => sum + Number(deal.value), 0) || 0;
+  const totalDealsValue = data.deals?.reduce((sum: number, deal) => sum + Number(deal.value), 0) || 0;
 
   return (
     <div className="space-y-6">
@@ -71,7 +92,7 @@ export default function Dashboard({ data }: DashboardProps) {
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h3 className="text-xl font-bold mb-4 text-gray-900">Recent Activity</h3>
         <div className="space-y-4">
-          {data.activities?.slice(0, 5).map((activity: any) => (
+          {data.activities?.slice(0, 5).map((activity) => (
             <div key={activity.id} className="flex items-start space-x-3 pb-4 border-b border-gray-100 last:border-0">
               <div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">

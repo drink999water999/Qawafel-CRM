@@ -4,8 +4,19 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createDeal, updateDeal, deleteDeal } from '@/lib/actions';
 
+interface Deal {
+  id: number;
+  title: string;
+  company: string;
+  contactName: string;
+  value: number | { toNumber?: () => number };
+  stage: string;
+  probability: number;
+  closeDate: string | Date;
+}
+
 interface DealsPageProps {
-  deals: any[];
+  deals: Deal[];
 }
 
 const STAGES = ['New', 'Discovery', 'Proposal', 'Negotiation', 'Closed Won', 'Lost'];
@@ -13,9 +24,9 @@ const STAGES = ['New', 'Discovery', 'Proposal', 'Negotiation', 'Closed Won', 'Lo
 export default function DealsPage({ deals }: DealsPageProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingDeal, setEditingDeal] = useState<any>(null);
+  const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [draggedDeal, setDraggedDeal] = useState<any>(null);
+  const [draggedDeal, setDraggedDeal] = useState<Deal | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     company: '',
@@ -50,7 +61,7 @@ export default function DealsPage({ deals }: DealsPageProps) {
     }
   }, [editingDeal]);
 
-  const handleOpenModal = (deal?: any) => {
+  const handleOpenModal = (deal?: Deal) => {
     setEditingDeal(deal || null);
     setIsModalOpen(true);
   };
@@ -96,7 +107,7 @@ export default function DealsPage({ deals }: DealsPageProps) {
     }
   };
 
-  const handleDragStart = (e: React.DragEvent, deal: any) => {
+  const handleDragStart = (e: React.DragEvent, deal: Deal) => {
     setDraggedDeal(deal);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', deal.id.toString());
