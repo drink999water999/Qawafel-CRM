@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-body: #F8F9FA;
+  --bg-card: #FFFFFF;
+  --border-color: #E9ECEF;
+  --text-dark: #212529;
+  --text-light: #6C757D;
+  --primary: #198754;
+  --primary-light-bg: #E8F5E9;
+}
+
+body {
+  @apply bg-gray-100 text-gray-900;
+  font-family: 'Inter', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Poppins', 'Inter', sans-serif;
+  @apply font-semibold text-gray-900;
+}

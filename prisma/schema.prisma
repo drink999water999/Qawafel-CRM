@@ -1,0 +1,137 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  role      String   @default("user")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Retailer {
+  id                Int       @id @default(autoincrement())
+  name              String
+  email             String    @unique
+  phone             String?
+  accountStatus     String    @map("account_status")
+  marketplaceStatus String    @map("marketplace_status")
+  joinDate          DateTime  @map("join_date") @db.Date
+  company           String
+
+  tickets    Ticket[]
+  activities Activity[]
+
+  @@map("retailers")
+}
+
+model Vendor {
+  id                Int       @id @default(autoincrement())
+  name              String
+  email             String    @unique
+  phone             String?
+  accountStatus     String    @map("account_status")
+  marketplaceStatus String    @map("marketplace_status")
+  joinDate          DateTime  @map("join_date") @db.Date
+  businessName      String    @map("business_name")
+  category          String
+
+  tickets    Ticket[]
+  activities Activity[]
+
+  @@map("vendors")
+}
+
+model Lead {
+  id               Int      @id @default(autoincrement())
+  company          String
+  contactName      String   @map("contact_name")
+  email            String
+  phone            String
+  status           String
+  source           String
+  value            Decimal  @db.Decimal(10, 2)
+  businessSize     String?  @map("business_size")
+  numberOfBranches Int?     @map("number_of_branches")
+  formToken        String?  @unique @map("form_token")
+
+  @@map("leads")
+}
+
+model Deal {
+  id          Int      @id @default(autoincrement())
+  title       String
+  company     String
+  contactName String   @map("contact_name")
+  value       Decimal  @db.Decimal(10, 2)
+  stage       String
+  probability Int
+  closeDate   DateTime @map("close_date") @db.Date
+
+  @@map("deals")
+}
+
+model Proposal {
+  id            Int       @id @default(autoincrement())
+  title         String
+  clientName    String    @map("client_name")
+  clientCompany String    @map("client_company")
+  value         Decimal   @db.Decimal(10, 2)
+  currency      String
+  status        String
+  validUntil    DateTime  @map("valid_until") @db.Date
+  sentDate      DateTime? @map("sent_date") @db.Date
+  createdAt     DateTime  @map("created_at") @db.Date
+
+  @@map("proposals")
+}
+
+model Ticket {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  status      String
+  type        String
+  userId      Int      @map("user_id")
+  userType    String   @map("user_type")
+  createdAt   DateTime @map("created_at") @db.Date
+
+  retailer Retailer? @relation(fields: [userId], references: [id], map: "fk_retailer")
+  vendor   Vendor?   @relation(fields: [userId], references: [id], map: "fk_vendor")
+
+  @@map("tickets")
+}
+
+model Activity {
+  id        Int     @id @default(autoincrement())
+  text      String
+  timestamp BigInt
+  icon      String
+  userId    Int?    @map("user_id")
+  userType  String? @map("user_type")
+
+  retailer Retailer? @relation(fields: [userId], references: [id], map: "fk_activity_retailer")
+  vendor   Vendor?   @relation(fields: [userId], references: [id], map: "fk_activity_vendor")
+
+  @@map("activities")
+}
+
+model UserProfile {
+  id       Int    @id @default(autoincrement())
+  fullName String @map("full_name")
+  email    String
+  phone    String
+
+  @@map("user_profile")
+}
