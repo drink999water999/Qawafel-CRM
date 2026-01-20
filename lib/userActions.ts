@@ -15,7 +15,7 @@ export async function updateUserProfile(data: {
 
   try {
     await prisma.user.update({
-      where: { id: parseInt(session.userId) },
+      where: { id: session.userId },
       data: {
         name: data.name,
         email: data.email,
@@ -41,7 +41,7 @@ export async function updateUserPassword(data: {
 
   try {
     const user = await prisma.user.findUnique({
-      where: { id: parseInt(session.userId) },
+      where: { id: session.userId },
     });
 
     if (!user) {
@@ -58,7 +58,7 @@ export async function updateUserPassword(data: {
     }
 
     await prisma.user.update({
-      where: { id: parseInt(session.userId) },
+      where: { id: session.userId },
       data: {
         password: data.newPassword,
       },

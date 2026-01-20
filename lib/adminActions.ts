@@ -85,7 +85,7 @@ export async function getUsers() {
   });
 }
 
-export async function updateUserApproval(id: number, approved: boolean) {
+export async function updateUserApproval(id: string, approved: boolean) {
   await requireAdmin();
   
   try {

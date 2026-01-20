@@ -16,7 +16,7 @@ interface SignupRequest {
 }
 
 interface User {
-  id: number;
+  id: string;
   email: string;
   name: string | null;
   username: string | null;
@@ -75,7 +75,7 @@ export default function ApprovalsPage({ signupRequests, users }: ApprovalsPagePr
     }
   };
 
-  const handleToggleApproval = async (id: number, currentStatus: boolean) => {
+  const handleToggleApproval = async (id: string, currentStatus: boolean) => {
     setIsLoading(true);
     try {
       const result = await updateUserApproval(id, !currentStatus);

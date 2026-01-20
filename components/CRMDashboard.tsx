@@ -114,7 +114,7 @@ interface SignupRequest {
 }
 
 interface User {
-  id: number;
+  id: string;
   email: string;
   name: string | null;
   username: string | null;
