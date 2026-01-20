@@ -1,11 +1,12 @@
 'use client';
 
 import { Suspense, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+//import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
 
 function LoginForm() {
-  const router = useRouter();
+  //const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,13 +19,27 @@ function LoginForm() {
   const getErrorMessage = (error: string) => {
     switch (error) {
       case 'pending':
-        return 'Your account is pending approval by an administrator';
+        return 'Your account is pending admin approval. Please contact an administrator.';
       case 'signup_requested':
         return 'Signup request submitted! An admin will review your request shortly.';
       case 'CredentialsSignin':
-        return 'Invalid email or password';
+        return 'Invalid email or password. Please try again.';
+      case 'OAuthSignin':
+        return 'Error connecting to Google. Please try again.';
+      case 'OAuthCallback':
+        return 'Error during Google sign-in. Please try again.';
+      case 'OAuthCreateAccount':
+        return 'Could not create account. Please contact support.';
+      case 'EmailCreateAccount':
+        return 'Could not create account. Please contact support.';
+      case 'Callback':
+        return 'Error during authentication. Please try again.';
+      case 'server_error':
+        return 'Server error occurred. Please try again later.';
+      case 'Configuration':
+        return 'Server configuration error. Please contact support.';
       default:
-        return 'An error occurred during sign in';
+        return `Authentication error: ${error}. Please try again.`;
     }
   };
 
@@ -33,6 +48,8 @@ function LoginForm() {
     setError('');
     setIsLoading(true);
 
+    console.log('🔐 Attempting credentials login for:', email);
+
     try {
       const result = await signIn('credentials', {
         email,
@@ -40,13 +57,19 @@ function LoginForm() {
         redirect: false,
       });
 
+      console.log('Login result:', result);
+
       if (result?.error) {
-        setError(result.error);
+        console.log('❌ Login failed:', result.error);
+        setError(result.error === 'CredentialsSignin' 
+          ? 'Invalid email or password' 
+          : result.error);
       } else if (result?.ok) {
-        router.push('/');
-        router.refresh();
+        console.log('✅ Login successful, redirecting...');
+        window.location.href = '/';
       }
-    } catch {
+    } catch (err) {
+      console.error('💥 Login exception:', err);
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -54,11 +77,20 @@ function LoginForm() {
   };
 
   const handleGoogleSignIn = async () => {
+    console.log('🔐 Attempting Google sign-in...');
     setIsLoading(true);
+    setError('');
+    
     try {
-      await signIn('google', { callbackUrl: '/' });
-    } catch {
-      setError('Failed to sign in with Google');
+      const result = await signIn('google', { 
+        callbackUrl: '/',
+        redirect: true,
+      });
+      
+      console.log('Google sign-in initiated:', result);
+    } catch (err) {
+      console.error('💥 Google sign-in error:', err);
+      setError('Failed to initiate Google sign-in');
       setIsLoading(false);
     }
   };
@@ -71,13 +103,13 @@ function LoginForm() {
           <p className="text-gray-600">B2B Marketplace Management</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {(error || urlError) && (
-            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md text-sm">
-              {error || getErrorMessage(urlError!)}
-            </div>
-          )}
+        {(error || urlError) && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md text-sm">
+            {error || getErrorMessage(urlError!)}
+          </div>
+        )}
 
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
               Email
@@ -115,7 +147,7 @@ function LoginForm() {
             disabled={isLoading}
             className="w-full bg-primary text-white font-bold py-3 px-4 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Logging in...' : 'Login'}
+            {isLoading ? 'Logging in...' : 'Login with Email'}
           </button>
         </form>
 
@@ -132,6 +164,7 @@ function LoginForm() {
           <button
             onClick={handleGoogleSignIn}
             disabled={isLoading}
+            type="button"
             className="mt-4 w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -142,6 +175,14 @@ function LoginForm() {
             </svg>
             Sign in with Google
           </button>
+        </div>
+
+        <div className="mt-6 text-center text-sm text-gray-600">
+          <p>Default admin credentials:</p>
+          <p className="font-mono text-xs mt-1">
+            <strong>Email:</strong> mohamed.hussein@qawafel.sa<br/>
+            <strong>Password:</strong> admin
+          </p>
         </div>
       </div>
     </div>
