@@ -44,67 +44,101 @@ export const authOptions: AuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.log('Missing credentials');
+            return null;
+          }
+
+          console.log('Attempting login for:', credentials.email);
+
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+          });
+
+          console.log('User found:', user ? 'Yes' : 'No');
+
+          if (!user) {
+            console.log('User not found');
+            return null;
+          }
+
+          if (user.password !== credentials.password) {
+            console.log('Password mismatch');
+            return null;
+          }
+
+          if (!user.approved) {
+            console.log('User not approved');
+            throw new Error("Your account is pending approval");
+          }
+
+          console.log('Login successful for:', credentials.email);
+
+          return {
+            id: user.id.toString(),
+            email: user.email,
+            name: user.name || user.username || "",
+            image: user.image || null,
+            role: user.role,
+          };
+        } catch (error) {
+          console.error('Authorize error:', error);
+          throw error;
         }
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
-
-        if (!user || user.password !== credentials.password) {
-          return null;
-        }
-
-        if (!user.approved) {
-          throw new Error("Your account is pending approval");
-        }
-
-        return {
-          id: user.id.toString(),
-          email: user.email,
-          name: user.name || user.username || "",
-          image: user.image || null,
-          role: user.role,
-        };
       },
     }),
   ],
   callbacks: {
     async signIn({ user, account }) {
-      if (account?.provider === "google") {
-        const existingUser = await prisma.user.findUnique({
-          where: { email: user.email! },
-        });
+      try {
+        console.log('SignIn callback - Provider:', account?.provider);
+        console.log('SignIn callback - User email:', user.email);
 
-        if (existingUser) {
-          if (!existingUser.approved) {
-            throw new Error("pending");
-          }
-          return true;
-        }
-
-        // Check if signup request exists
-        const existingRequest = await prisma.signupRequest.findUnique({
-          where: { email: user.email! },
-        });
-
-        if (!existingRequest) {
-          // Create signup request
-          await prisma.signupRequest.create({
-            data: {
-              email: user.email!,
-              name: user.name!,
-              image: user.image,
-              provider: "google",
-              status: "pending",
-            },
+        if (account?.provider === "google") {
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email! },
           });
-        }
 
-        throw new Error("signup_requested");
+          console.log('Existing Google user found:', existingUser ? 'Yes' : 'No');
+
+          if (existingUser) {
+            if (!existingUser.approved) {
+              console.log('User exists but not approved');
+              throw new Error("pending");
+            }
+            console.log('Existing Google user approved, allowing sign in');
+            return true;
+          }
+
+          // Check if signup request exists
+          const existingRequest = await prisma.signupRequest.findUnique({
+            where: { email: user.email! },
+          });
+
+          console.log('Existing signup request:', existingRequest ? 'Yes' : 'No');
+
+          if (!existingRequest) {
+            // Create signup request
+            console.log('Creating new signup request for:', user.email);
+            await prisma.signupRequest.create({
+              data: {
+                email: user.email!,
+                name: user.name!,
+                image: user.image,
+                provider: "google",
+                status: "pending",
+              },
+            });
+          }
+
+          throw new Error("signup_requested");
+        }
+        return true;
+      } catch (error) {
+        console.error('SignIn callback error:', error);
+        throw error;
       }
-      return true;
     },
     async jwt({ token, user }) {
       if (user) {
@@ -152,5 +186,6 @@ export const authOptions: AuthOptions = {
   session: {
     strategy: "jwt",
   },
+  debug: process.env.NODE_ENV === 'development',
   secret: process.env.NEXTAUTH_SECRET,
 };
