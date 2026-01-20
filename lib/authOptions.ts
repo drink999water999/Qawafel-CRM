@@ -1,4 +1,5 @@
 import { AuthOptions } from "next-auth";
+import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 
@@ -12,6 +13,10 @@ interface ExtendedUser {
 
 export const authOptions: AuthOptions = {
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -19,11 +24,10 @@ export const authOptions: AuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        console.log('\n=== LOGIN ATTEMPT ===');
+        console.log('\n=== CREDENTIALS LOGIN ===');
         console.log('Email:', credentials?.email);
         
         if (!credentials?.email || !credentials?.password) {
-          console.log('ERROR: Missing credentials');
           return null;
         }
 
@@ -32,44 +36,22 @@ export const authOptions: AuthOptions = {
             where: { email: credentials.email },
           });
 
-          console.log('User found:', !!user);
-          if (user) {
-            console.log('User details:', {
-              email: user.email,
-              hasPassword: !!user.password,
-              password: user.password,
-              approved: user.approved,
-              role: user.role
-            });
-          }
-
           if (!user) {
-            console.log('ERROR: User not found');
-            console.log('FIX: Run npx prisma db seed');
+            console.log('User not found');
             return null;
           }
 
-          if (!user.password) {
-            console.log('ERROR: User has no password');
-            return null;
-          }
-
-          const passwordMatch = user.password === credentials.password;
-          console.log('Password match:', passwordMatch);
-          console.log('Expected:', user.password);
-          console.log('Received:', credentials.password);
-
-          if (!passwordMatch) {
-            console.log('ERROR: Wrong password');
+          if (!user.password || user.password !== credentials.password) {
+            console.log('Wrong password');
             return null;
           }
 
           if (!user.approved) {
-            console.log('ERROR: User not approved');
+            console.log('User not approved');
             return null;
           }
 
-          console.log('SUCCESS: Login approved');
+          console.log('Login successful');
           return {
             id: user.id.toString(),
             email: user.email,
@@ -78,13 +60,60 @@ export const authOptions: AuthOptions = {
             role: user.role,
           };
         } catch (error) {
-          console.error('DATABASE ERROR:', error);
+          console.error('Database error:', error);
           return null;
         }
       },
     }),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === "credentials") {
+        return true;
+      }
+
+      if (account?.provider === "google") {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email! },
+        });
+
+        if (existingUser && existingUser.approved) {
+          await prisma.user.update({
+            where: { email: user.email! },
+            data: {
+              name: user.name || existingUser.name,
+              image: user.image || existingUser.image,
+              provider: 'google',
+            }
+          });
+          return true;
+        }
+
+        if (existingUser && !existingUser.approved) {
+          return '/login?error=pending';
+        }
+
+        const existingRequest = await prisma.signupRequest.findUnique({
+          where: { email: user.email! },
+        });
+
+        if (!existingRequest) {
+          await prisma.signupRequest.create({
+            data: {
+              email: user.email!,
+              name: user.name || user.email!,
+              image: user.image,
+              provider: "google",
+              status: "pending",
+            },
+          });
+        }
+
+        return '/login?error=signup_requested';
+      }
+
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -107,5 +136,5 @@ export const authOptions: AuthOptions = {
   session: {
     strategy: "jwt",
   },
-  secret: process.env.NEXTAUTH_SECRET || "dev-secret-change-in-production",
+  secret: process.env.NEXTAUTH_SECRET,
 };
