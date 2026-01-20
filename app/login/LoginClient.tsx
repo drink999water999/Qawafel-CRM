@@ -17,17 +17,16 @@ function LoginForm() {
   const getErrorMessage = (error: string) => {
     switch (error) {
       case 'pending':
-        return 'Your account is pending admin approval. Please contact an administrator.';
+        return 'Your account is pending admin approval.';
       case 'signup_requested':
-        return 'Signup request submitted! An admin will review your request shortly.';
+        return 'Signup request submitted! An admin will review your request.';
       case 'CredentialsSignin':
-        return 'Invalid email or password. Please try again.';
+        return 'Invalid email or password.';
       case 'OAuthSignin':
       case 'OAuthCallback':
-      case 'OAuthCreateAccount':
-        return 'Error signing in with Google. Please try again.';
+        return 'Google Sign-In is not configured. Please use email/password login.';
       case 'Configuration':
-        return 'Authentication system error. Please contact support.';
+        return 'Authentication configuration error.';
       default:
         return 'An error occurred. Please try again.';
     }
@@ -38,7 +37,8 @@ function LoginForm() {
     setError('');
     setIsLoading(true);
 
-    console.log('🔐 Attempting login...');
+    console.log('\n🔐 LOGIN ATTEMPT');
+    console.log('Email:', email);
 
     try {
       const result = await signIn('credentials', {
@@ -48,20 +48,23 @@ function LoginForm() {
         callbackUrl: '/',
       });
 
-      console.log('Login result:', result);
+      console.log('📊 Login result:', result);
 
       if (result?.error) {
-        console.log('❌ Login failed:', result.error);
+        console.log('❌ Login failed');
         setError('Invalid email or password');
-      } else if (result?.ok && result?.url) {
-        console.log('✅ Login successful, redirecting...');
-        window.location.href = result.url;
       } else if (result?.ok) {
-        console.log('✅ Login successful, redirecting to home...');
-        window.location.href = '/';
+        console.log('✅ Login successful!');
+        console.log('Redirecting to:', result.url || '/');
+        
+        // Force page reload to update session
+        window.location.href = result.url || '/';
+      } else {
+        console.log('⚠️ Unexpected result:', result);
+        setError('Login failed. Please try again.');
       }
     } catch (err) {
-      console.error('💥 Login exception:', err);
+      console.error('💥 Exception during login:', err);
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -70,20 +73,27 @@ function LoginForm() {
 
   const handleGoogleSignIn = async (e: React.MouseEvent) => {
     e.preventDefault();
-    console.log('🔐 Initiating Google sign-in...');
+    
+    // Check if Google OAuth is likely configured
+    console.log('🔐 Attempting Google sign-in...');
     setIsLoading(true);
     setError('');
     
     try {
-      await signIn('google', { 
+      const result = await signIn('google', { 
         callbackUrl: '/',
       });
+      
+      console.log('Google sign-in result:', result);
     } catch (err) {
       console.error('💥 Google sign-in error:', err);
-      setError('Failed to initiate Google sign-in');
+      setError('Google Sign-In is not configured. Please use email/password login.');
       setIsLoading(false);
     }
   };
+
+  // Check if there's a Google OAuth error
+  const isGoogleError = urlError === 'OAuthSignin' || urlError === 'OAuthCallback';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary to-green-700">
@@ -113,6 +123,7 @@ function LoginForm() {
               className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="Enter your email"
               disabled={isLoading}
+              autoComplete="email"
             />
           </div>
 
@@ -129,6 +140,7 @@ function LoginForm() {
               className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="Enter your password"
               disabled={isLoading}
+              autoComplete="current-password"
             />
           </div>
 
@@ -165,6 +177,12 @@ function LoginForm() {
             </svg>
             Sign in with Google
           </button>
+          
+          {isGoogleError && (
+            <p className="mt-2 text-xs text-center text-gray-500">
+              Google Sign-In is not configured. Please use email/password.
+            </p>
+          )}
         </div>
       </div>
     </div>
