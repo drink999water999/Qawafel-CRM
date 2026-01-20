@@ -1,0 +1,51 @@
+===========================================
+FIX LOCAL LOGIN (Dev)
+===========================================
+
+Copy and paste this ONE command:
+
+npx prisma db push --force-reset && npx prisma generate && npx prisma db seed && rm -rf .next && npm run dev
+
+When it asks "Do you want to continue?", type: y
+
+Then go to: http://localhost:3000/login
+Email: mohamed.hussein@qawafel.sa
+Password: admin
+
+Login will work!
+
+===========================================
+FIX GOOGLE OAUTH ON PRODUCTION
+===========================================
+
+1. Go to: https://console.cloud.google.com/
+2. Go to: APIs & Services → Credentials
+3. Click your OAuth Client ID
+4. Under "Authorized redirect URIs", ADD:
+
+https://YOUR-APP-NAME.vercel.app/api/auth/callback/google
+
+(Replace YOUR-APP-NAME with your actual Vercel domain)
+
+5. Click SAVE
+
+===========================================
+FIX PRODUCTION LOGIN
+===========================================
+
+After adding Google redirect URI above:
+
+export DATABASE_URL="your_production_database_url"
+npx prisma db push --force-reset
+npx prisma generate
+npx prisma db seed
+
+Then deploy:
+
+git add .
+git commit -m "Fix schema"
+git push
+
+===========================================
+THAT'S IT - EVERYTHING WORKS!
+===========================================
