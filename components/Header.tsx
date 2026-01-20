@@ -1,12 +1,31 @@
 'use client';
 
-import { logout } from '@/lib/auth';
+import Image from 'next/image';
+import { signOut } from 'next-auth/react';
 
-export default function Header() {
+interface HeaderProps {
+  user?: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
+}
+
+export default function Header({ user }: HeaderProps) {
   const handleLogout = async () => {
     if (confirm('Are you sure you want to logout?')) {
-      await logout();
+      await signOut({ callbackUrl: '/login' });
     }
+  };
+
+  const getInitials = () => {
+    if (user?.name) {
+      return user.name.charAt(0).toUpperCase();
+    }
+    if (user?.email) {
+      return user.email.charAt(0).toUpperCase();
+    }
+    return 'U';
   };
 
   return (
@@ -32,9 +51,19 @@ export default function Header() {
             </svg>
             <span className="text-sm font-medium">Logout</span>
           </button>
-          <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">
-            A
-          </div>
+          {user?.image ? (
+            <Image 
+              src={user.image} 
+              alt={user.name || 'User'} 
+              width={40}
+              height={40}
+              className="rounded-full border-2 border-primary"
+            />
+          ) : (
+            <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-lg">
+              {getInitials()}
+            </div>
+          )}
         </div>
       </div>
     </header>
