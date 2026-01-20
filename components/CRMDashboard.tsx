@@ -9,6 +9,7 @@ import DealsPage from './DealsPage';
 import MerchantsPage from './MerchantsPage';
 import CustomersPage from './CustomersPage';
 import ProposalsPage from './ProposalsPage';
+import ApprovalsPage from './ApprovalsPage';
 import SettingsPage from './SettingsPage';
 
 interface UserProfile {
@@ -26,6 +27,9 @@ interface CRMData {
   proposals: Proposal[];
   activities: Activity[];
   userProfile: UserProfile | null;
+  signupRequests?: SignupRequest[];
+  users?: User[];
+  userRole?: string;
 }
 
 interface Lead {
@@ -95,6 +99,27 @@ interface Activity {
   icon: string;
 }
 
+interface SignupRequest {
+  id: number;
+  email: string;
+  name: string;
+  image: string | null;
+  provider: string;
+  status: string;
+  createdAt: Date;
+}
+
+interface User {
+  id: number;
+  email: string;
+  name: string | null;
+  username: string | null;
+  role: string;
+  approved: boolean;
+  provider: string;
+  createdAt: Date;
+}
+
 interface CRMDashboardProps {
   initialData: CRMData;
 }
@@ -116,6 +141,11 @@ export default function CRMDashboard({ initialData }: CRMDashboardProps) {
         return <CustomersPage customers={initialData.customers} />;
       case 'proposals':
         return <ProposalsPage proposals={initialData.proposals} />;
+      case 'approvals':
+        return <ApprovalsPage 
+          signupRequests={initialData.signupRequests || []} 
+          users={initialData.users || []} 
+        />;
       case 'settings':
         return <SettingsPage profile={initialData.userProfile} />;
       default:
@@ -125,7 +155,11 @@ export default function CRMDashboard({ initialData }: CRMDashboardProps) {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
+      <Sidebar 
+        currentPage={currentPage} 
+        onPageChange={setCurrentPage} 
+        userRole={initialData.userRole}
+      />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
         <main className="flex-1 overflow-y-auto p-6">{renderPage()}</main>

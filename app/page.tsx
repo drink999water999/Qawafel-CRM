@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { initializeData } from '@/lib/actions';
-import { requireAuth } from '@/lib/auth';
+import { getSignupRequests, getUsers } from '@/lib/adminActions';
+import { requireAuth, getSession } from '@/lib/auth';
 import CRMDashboard from '@/components/CRMDashboard';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -10,12 +11,33 @@ export default async function Home() {
   // Require authentication - will redirect to /login if not authenticated
   await requireAuth();
   
+  const session = await getSession();
   const data = await initializeData();
+
+  // Load signup requests and users for admins
+  let signupRequests: Awaited<ReturnType<typeof getSignupRequests>> = [];
+  let users: Awaited<ReturnType<typeof getUsers>> = [];
+  
+  if (session?.role === 'admin') {
+    try {
+      signupRequests = await getSignupRequests();
+      users = await getUsers();
+    } catch (error) {
+      console.error('Error loading admin data:', error);
+    }
+  }
+
+  const fullData = {
+    ...data,
+    signupRequests,
+    users,
+    userRole: session?.role,
+  };
 
   return (
     <main className="min-h-screen">
       <Suspense fallback={<LoadingSpinner />}>
-        <CRMDashboard initialData={data} />
+        <CRMDashboard initialData={fullData} />
       </Suspense>
     </main>
   );

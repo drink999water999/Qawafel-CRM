@@ -7,12 +7,16 @@ async function main() {
 
   // Seed Admin User
   const adminUser = await prisma.user.upsert({
-    where: { username: 'admin' },
+    where: { email: 'mohamed.hussein@qawafel.sa' },
     update: {},
     create: {
+      email: 'mohamed.hussein@qawafel.sa',
       username: 'admin',
       password: 'admin', // In production, this should be hashed!
+      name: 'Mohamed Hussein',
       role: 'admin',
+      approved: true,
+      provider: 'credentials',
     },
   });
   console.log({ adminUser });
