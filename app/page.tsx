@@ -2,7 +2,6 @@ import { Suspense } from 'react';
 import { initializeData } from '@/lib/actions';
 import { getSignupRequests, getUsers } from '@/lib/adminActions';
 import { requireAuth, getSession } from '@/lib/auth';
-import prisma from '@/lib/prisma';
 import CRMDashboard from '@/components/CRMDashboard';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -19,16 +18,6 @@ export default async function Home() {
   let signupRequests: Awaited<ReturnType<typeof getSignupRequests>> = [];
   let users: Awaited<ReturnType<typeof getUsers>> = [];
   
-  // Get provider info
-  let userProvider = 'credentials';
-  if (session) {
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(session.userId) },
-      select: { provider: true },
-    });
-    userProvider = user?.provider || 'credentials';
-  }
-  
   if (session?.role === 'admin') {
     try {
       signupRequests = await getSignupRequests();
@@ -43,10 +32,6 @@ export default async function Home() {
     signupRequests,
     users,
     userRole: session?.role,
-    userName: session?.name,
-    userEmail: session?.email,
-    userImage: session?.image,
-    userProvider,
   };
 
   return (

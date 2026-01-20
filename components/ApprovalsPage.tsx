@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { approveSignupRequest, rejectSignupRequest, updateUserApproval } from '@/lib/adminActions';
 
 interface SignupRequest {
@@ -115,7 +114,7 @@ export default function ApprovalsPage({ signupRequests, users }: ApprovalsPagePr
               <div key={request.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
                 <div className="flex items-center space-x-4">
                   {request.image && (
-                    <Image src={request.image} alt={request.name} width={40} height={40} className="rounded-full" />
+                    <img src={request.image} alt={request.name} className="w-10 h-10 rounded-full" />
                   )}
                   <div>
                     <p className="font-medium text-gray-900">{request.name}</p>
