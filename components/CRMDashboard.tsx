@@ -30,6 +30,10 @@ interface CRMData {
   signupRequests?: SignupRequest[];
   users?: User[];
   userRole?: string;
+  userName?: string | null;
+  userEmail?: string | null;
+  userImage?: string | null;
+  userProvider?: string;
 }
 
 interface Lead {
@@ -147,7 +151,13 @@ export default function CRMDashboard({ initialData }: CRMDashboardProps) {
           users={initialData.users || []} 
         />;
       case 'settings':
-        return <SettingsPage profile={initialData.userProfile} />;
+        return <SettingsPage user={{
+          name: initialData.userName,
+          email: initialData.userEmail,
+          image: initialData.userImage,
+          role: initialData.userRole,
+          provider: initialData.userProvider,
+        }} />;
       default:
         return <Dashboard data={initialData} setCurrentPage={setCurrentPage} />;
     }
@@ -161,7 +171,11 @@ export default function CRMDashboard({ initialData }: CRMDashboardProps) {
         userRole={initialData.userRole}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
+        <Header user={{
+          name: initialData.userName,
+          email: initialData.userEmail,
+          image: initialData.userImage,
+        }} />
         <main className="flex-1 overflow-y-auto p-6">{renderPage()}</main>
       </div>
     </div>
