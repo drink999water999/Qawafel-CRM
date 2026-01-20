@@ -23,7 +23,7 @@ export default async function Home() {
   let userProvider = 'credentials';
   if (session) {
     const user = await prisma.user.findUnique({
-      where: { id: parseInt(session.userId) },
+      where: { id: session.userId },
       select: { provider: true },
     });
     userProvider = user?.provider || 'credentials';
