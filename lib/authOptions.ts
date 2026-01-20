@@ -53,7 +53,7 @@ export const authOptions: AuthOptions = {
 
           console.log('Login successful');
           return {
-            id: user.id.toString(),
+            id: user.id,
             email: user.email,
             name: user.name || user.username || user.email,
             image: user.image || null,
