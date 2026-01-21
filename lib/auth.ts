@@ -5,14 +5,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from './authOptions';
 import prisma from './prisma';
 
-interface ExtendedUser {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  image?: string | null;
-}
-
 export async function getSession() {
   const session = await getServerSession(authOptions);
   
@@ -31,7 +23,13 @@ export async function getSession() {
     return null;
   }
   
-  const user = session.user as any;
+  const user = session.user as {
+    id?: string;
+    email?: string | null;
+    name?: string | null;
+    role?: string;
+    image?: string | null;
+  };
   
   const result = {
     userId: user.id,
