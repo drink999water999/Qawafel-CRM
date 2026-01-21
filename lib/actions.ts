@@ -68,7 +68,6 @@ export async function createMerchant(data: {
   email: string;
   phone?: string;
   accountStatus: string;
-  marketplaceStatus: string;
 }) {
   const merchant = await prisma.merchant.create({
     data: {
@@ -89,7 +88,6 @@ export async function updateMerchant(
     email?: string;
     phone?: string;
     accountStatus?: string;
-    marketplaceStatus?: string;
     // Subscription fields
     plan?: string;
     signUpDate?: string;
@@ -118,7 +116,6 @@ export async function updateMerchant(
     email?: string;
     phone?: string | null;
     accountStatus?: string;
-    marketplaceStatus?: string;
     plan?: string | null;
     trialFlag?: boolean;
     signUpDate?: Date;
@@ -140,7 +137,6 @@ export async function updateMerchant(
     email: data.email,
     phone: data.phone || null,
     accountStatus: data.accountStatus,
-    marketplaceStatus: data.marketplaceStatus,
     plan: data.plan || null,
     trialFlag: data.trialFlag || false,
     crId: data.crId || null,

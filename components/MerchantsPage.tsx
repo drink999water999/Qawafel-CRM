@@ -14,7 +14,6 @@ interface Merchant {
   email: string;
   phone: string | null;
   accountStatus: string;
-  marketplaceStatus: string;
   // New subscription fields
   plan?: string | null;
   signUpDate?: Date | null;
@@ -55,7 +54,6 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
     email: '',
     phone: '',
     accountStatus: 'Active',
-    marketplaceStatus: 'Activated',
     // Subscription fields
     plan: '',
     signUpDate: '',
@@ -95,7 +93,6 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
         email: editingMerchant.email,
         phone: editingMerchant.phone || '',
         accountStatus: editingMerchant.accountStatus || 'Active',
-        marketplaceStatus: editingMerchant.marketplaceStatus || 'Activated',
         // Subscription fields
         plan: editingMerchant.plan || '',
         signUpDate: formatDate(editingMerchant.signUpDate),
@@ -124,7 +121,6 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
         email: '',
         phone: '',
         accountStatus: 'Active',
-        marketplaceStatus: 'Activated',
         plan: '',
         signUpDate: '',
         trialFlag: false,
@@ -235,9 +231,9 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
 
   // Download merchants as CSV
   const handleDownload = () => {
-    const csvHeaders = 'Name,Business Name,Category,Email,Phone,Account Status,Marketplace Status\n';
+    const csvHeaders = 'Name,Business Name,Category,Email,Phone,Account Status\n';
     const csvRows = filteredMerchants.map(merchant => 
-      `"${merchant.name}","${merchant.businessName}","${merchant.category}","${merchant.email}","${merchant.phone || ''}","${merchant.accountStatus}","${merchant.marketplaceStatus}"`
+      `"${merchant.name}","${merchant.businessName}","${merchant.category}","${merchant.email}","${merchant.phone || ''}","${merchant.accountStatus}"`
     ).join('\n');
     
     const csvContent = csvHeaders + csvRows;
@@ -321,7 +317,6 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Email</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Phone</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Account Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Marketplace</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Plan</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Sign Up Date</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Trial</th>
@@ -348,7 +343,6 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.email}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.phone || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.accountStatus}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.marketplaceStatus}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.plan || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.signUpDate ? new Date(merchant.signUpDate).toLocaleDateString() : '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.trialFlag ? '✓' : '-'}</td>
@@ -419,14 +413,6 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
                       <option value="Deactivated">Deactivated</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Marketplace Status</label>
-                    <select value={formData.marketplaceStatus} onChange={(e) => setFormData({ ...formData, marketplaceStatus: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3">
-                      <option value="Activated">Activated</option>
-                      <option value="Retained">Retained</option>
-                      <option value="Churned">Churned</option>
-                    </select>
-                  </div>
                 </div>
               </div>
 
@@ -438,9 +424,10 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
                     <label className="block text-sm font-medium text-gray-700">Plan</label>
                     <select value={formData.plan} onChange={(e) => setFormData({ ...formData, plan: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3">
                       <option value="">Select Plan</option>
-                      <option value="Basic">Basic</option>
-                      <option value="Pro">Pro</option>
-                      <option value="Enterprise">Enterprise</option>
+                      <option value="Monthly">Monthly</option>
+                      <option value="Quarterly">Quarterly</option>
+                      <option value="Yearly">Yearly</option>
+                      <option value="Trail">Trail</option>
                     </select>
                   </div>
                   <div className="flex items-center pt-6">
@@ -545,9 +532,10 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
                     <select value={formData.retentionStatus} onChange={(e) => setFormData({ ...formData, retentionStatus: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3">
                       <option value="">Select Status</option>
                       <option value="Active">Active</option>
-                      <option value="At Risk">At Risk</option>
-                      <option value="Churned">Churned</option>
                       <option value="Retained">Retained</option>
+                      <option value="Ressurected">Ressurected</option>
+                      <option value="Dormant">Dormant</option>
+                      <option value="Churned">Churned</option>
                     </select>
                   </div>
                 </div>

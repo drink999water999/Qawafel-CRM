@@ -180,7 +180,7 @@ export default function DealsPage({ deals }: DealsPageProps) {
                 </div>
                 <div className="mt-3">
                   <span className="text-3xl font-bold text-gray-800">{stageDeals.length}</span>
-                  <span className="text-sm font-medium text-gray-500 ml-2">${new Intl.NumberFormat('en-US', { minimumFractionDigits: 0 }).format(totalValue)}</span>
+                  <span className="text-sm font-medium text-gray-500 ml-2">{new Intl.NumberFormat('en-SA', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 }).format(totalValue)}</span>
                 </div>
               </div>
               <div className="space-y-3 overflow-y-auto max-h-96">
@@ -211,7 +211,7 @@ export default function DealsPage({ deals }: DealsPageProps) {
                       </div>
                     </div>
                     <div className="mt-3 flex items-center justify-between text-xs text-gray-600">
-                      <span className="font-semibold text-green-600">${new Intl.NumberFormat('en-US', { minimumFractionDigits: 0 }).format(Number(deal.value))}</span>
+                      <span className="font-semibold text-green-600">{new Intl.NumberFormat('en-SA', { style: 'currency', currency: 'SAR' }).format(Number(deal.value))}</span>
                       <span>{deal.probability}%</span>
                     </div>
                   </div>
@@ -246,7 +246,7 @@ export default function DealsPage({ deals }: DealsPageProps) {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Value ($)</label>
+                  <label className="block text-sm font-medium text-gray-700">Value (SAR)</label>
                   <input type="number" required min="0" value={formData.value} onChange={(e) => setFormData({ ...formData, value: parseFloat(e.target.value) || 0 })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" />
                 </div>
                 <div>

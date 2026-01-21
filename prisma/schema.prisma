@@ -50,6 +50,9 @@ model Customer {
   activities Activity[]
   notes      Note[]
 
+  @@index([accountStatus])
+  @@index([marketplaceStatus])
+  @@index([joinDate])
   @@map("customers")
 }
 
@@ -59,7 +62,6 @@ model Merchant {
   email                   String    @unique
   phone                   String?
   accountStatus           String    @map("account_status")
-  marketplaceStatus       String    @map("marketplace_status")
   joinDate                DateTime  @map("join_date") @db.Date
   businessName            String    @map("business_name")
   category                String
@@ -91,6 +93,11 @@ model Merchant {
   activities Activity[]
   notes      Note[]
 
+  @@index([accountStatus])
+  @@index([plan])
+  @@index([retentionStatus])
+  @@index([verificationStatus])
+  @@index([saasEndDate])
   @@map("merchants")
 }
 
@@ -109,6 +116,8 @@ model Lead {
 
   notes Note[]
 
+  @@index([email])
+  @@index([status])
   @@map("leads")
 }
 
@@ -122,6 +131,8 @@ model Deal {
   probability Int
   closeDate   DateTime @map("close_date") @db.Date
 
+  @@index([stage])
+  @@index([closeDate])
   @@map("deals")
 }
 
@@ -179,5 +190,10 @@ model Note {
   customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
   merchant Merchant? @relation(fields: [merchantId], references: [id], onDelete: Cascade)
 
+  @@index([leadId])
+  @@index([customerId])
+  @@index([merchantId])
+  @@index([createdAt])
+  @@index([userId])
   @@map("notes")
 }

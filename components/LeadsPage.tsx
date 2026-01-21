@@ -268,7 +268,7 @@ export default function LeadsPage({ leads }: LeadsPageProps) {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{lead.source}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Intl.NumberFormat('en-US').format(Number(lead.value))}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Intl.NumberFormat('en-SA', { style: 'currency', currency: 'SAR' }).format(Number(lead.value))}</td>
                 <td className="sticky right-0 bg-white px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2 shadow-[-2px_0_4px_rgba(0,0,0,0.1)]">
                   <button onClick={() => handleOpenModal(lead)} disabled={isLoading} className="text-primary hover:text-green-700 disabled:opacity-50">Edit</button>
                   <button onClick={() => handleDelete(lead.id)} disabled={isLoading} className="text-red-600 hover:text-red-900 disabled:opacity-50">Delete</button>
@@ -324,7 +324,7 @@ export default function LeadsPage({ leads }: LeadsPageProps) {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Value ($)</label>
+                <label className="block text-sm font-medium text-gray-700">Value (SAR)</label>
                 <input type="number" required min="0" step="0.01" value={formData.value} onChange={(e) => setFormData({ ...formData, value: parseFloat(e.target.value) || 0 })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" />
               </div>
               <div className="flex justify-end space-x-4 pt-4">

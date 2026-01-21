@@ -69,7 +69,6 @@ interface Merchant {
   email: string;
   phone: string | null;
   accountStatus: string;
-  marketplaceStatus: string;
   joinDate?: Date;
 }
 

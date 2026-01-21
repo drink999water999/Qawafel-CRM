@@ -63,7 +63,6 @@ async function main() {
       email: 'mohammed@khandates.com',
       phone: '555-0201',
       accountStatus: 'Active',
-      marketplaceStatus: 'Activated',
       joinDate: new Date('2023-03-10'),
     },
   });
@@ -78,7 +77,6 @@ async function main() {
       email: 'aisha@abdullahspices.com',
       phone: '555-0202',
       accountStatus: 'Deactivated',
-      marketplaceStatus: 'Churned',
       joinDate: new Date('2023-04-05'),
     },
   });
@@ -121,13 +119,22 @@ async function main() {
         value: 30000,
         formToken: 'token-456-def',
       },
+      {
+        company: 'Farsi Supermarket',
+        contactName: 'Ahmed Al-Farsi',
+        email: 'ahmed@farsisupermarket.sa',
+        phone: '555-0304',
+        status: 'Closed Won',
+        source: 'Referral',
+        value: 25000,
+      },
     ],
     skipDuplicates: true,
   });
 
   console.log('Leads seeded');
 
-  // Seed Deals
+  // Seed Deals - completely independent from leads
   await prisma.deal.createMany({
     data: [
       {
