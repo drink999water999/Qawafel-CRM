@@ -48,22 +48,48 @@ model Customer {
   company           String
 
   activities Activity[]
+  notes      Note[]
 
   @@map("customers")
 }
 
 model Merchant {
-  id                Int       @id @default(autoincrement())
-  name              String
-  email             String    @unique
-  phone             String?
-  accountStatus     String    @map("account_status")
-  marketplaceStatus String    @map("marketplace_status")
-  joinDate          DateTime  @map("join_date") @db.Date
-  businessName      String    @map("business_name")
-  category          String
+  id                      Int       @id @default(autoincrement())
+  name                    String
+  email                   String    @unique
+  phone                   String?
+  accountStatus           String    @map("account_status")
+  marketplaceStatus       String    @map("marketplace_status")
+  joinDate                DateTime  @map("join_date") @db.Date
+  businessName            String    @map("business_name")
+  category                String
+  
+  // New subscription fields
+  plan                    String?
+  signUpDate              DateTime? @map("sign_up_date") @db.Date
+  trialFlag               Boolean   @default(false) @map("trial_flag")
+  saasStartDate           DateTime? @map("saas_start_date") @db.Date
+  saasEndDate             DateTime? @map("saas_end_date") @db.Date
+  
+  // CR (Commercial Registration) fields
+  crId                    String?   @map("cr_id")
+  crCertificate           String?   @map("cr_certificate") // File path or URL
+  
+  // VAT fields
+  vatId                   String?   @map("vat_id")
+  vatCertificate          String?   @map("vat_certificate") // File path or URL
+  
+  // ZATCA (Zakat, Tax and Customs Authority) fields
+  zatcaIdentificationType String?   @map("zatca_identification_type")
+  zatcaId                 String?   @map("zatca_id")
+  verificationStatus      String?   @map("verification_status")
+  
+  // Payment and retention
+  lastPaymentDueDate      DateTime? @map("last_payment_due_date") @db.Date
+  retentionStatus         String?   @map("retention_status")
 
   activities Activity[]
+  notes      Note[]
 
   @@map("merchants")
 }
@@ -80,6 +106,8 @@ model Lead {
   businessSize     String?  @map("business_size")
   numberOfBranches Int?     @map("number_of_branches")
   formToken        String?  @unique @map("form_token")
+
+  notes Note[]
 
   @@map("leads")
 }
@@ -133,4 +161,23 @@ model UserProfile {
   phone    String
 
   @@map("user_profile")
+}
+
+model Note {
+  id        Int      @id @default(autoincrement())
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  userId    String   @map("user_id")
+  userName  String   @map("user_name")
+  
+  // Polymorphic relations - one of these will be set
+  leadId     Int?     @map("lead_id")
+  customerId Int?     @map("customer_id")
+  merchantId Int?     @map("merchant_id")
+  
+  lead     Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  merchant Merchant? @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@map("notes")
 }

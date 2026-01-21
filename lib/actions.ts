@@ -47,6 +47,13 @@ export async function updateCustomer(
   return customer;
 }
 
+export async function deleteCustomer(id: number) {
+  await prisma.customer.delete({
+    where: { id },
+  });
+  revalidatePath('/');
+}
+
 // ============== MERCHANTS ==============
 export async function getMerchants() {
   return await prisma.merchant.findMany({
@@ -83,14 +90,96 @@ export async function updateMerchant(
     phone?: string;
     accountStatus?: string;
     marketplaceStatus?: string;
+    // Subscription fields
+    plan?: string;
+    signUpDate?: string;
+    trialFlag?: boolean;
+    saasStartDate?: string;
+    saasEndDate?: string;
+    // CR fields
+    crId?: string;
+    crCertificate?: string;
+    // VAT fields
+    vatId?: string;
+    vatCertificate?: string;
+    // ZATCA fields
+    zatcaIdentificationType?: string;
+    zatcaId?: string;
+    verificationStatus?: string;
+    // Payment fields
+    lastPaymentDueDate?: string;
+    retentionStatus?: string;
   }
 ) {
+  const updateData: {
+    name?: string;
+    businessName?: string;
+    category?: string;
+    email?: string;
+    phone?: string | null;
+    accountStatus?: string;
+    marketplaceStatus?: string;
+    plan?: string | null;
+    trialFlag?: boolean;
+    signUpDate?: Date;
+    saasStartDate?: Date;
+    saasEndDate?: Date;
+    crId?: string | null;
+    crCertificate?: string | null;
+    vatId?: string | null;
+    vatCertificate?: string | null;
+    zatcaIdentificationType?: string | null;
+    zatcaId?: string | null;
+    verificationStatus?: string | null;
+    lastPaymentDueDate?: Date;
+    retentionStatus?: string | null;
+  } = {
+    name: data.name,
+    businessName: data.businessName,
+    category: data.category,
+    email: data.email,
+    phone: data.phone || null,
+    accountStatus: data.accountStatus,
+    marketplaceStatus: data.marketplaceStatus,
+    plan: data.plan || null,
+    trialFlag: data.trialFlag || false,
+    crId: data.crId || null,
+    crCertificate: data.crCertificate || null,
+    vatId: data.vatId || null,
+    vatCertificate: data.vatCertificate || null,
+    zatcaIdentificationType: data.zatcaIdentificationType || null,
+    zatcaId: data.zatcaId || null,
+    verificationStatus: data.verificationStatus || null,
+    retentionStatus: data.retentionStatus || null,
+  };
+
+  // Convert date strings to Date objects
+  if (data.signUpDate) {
+    updateData.signUpDate = new Date(data.signUpDate);
+  }
+  if (data.saasStartDate) {
+    updateData.saasStartDate = new Date(data.saasStartDate);
+  }
+  if (data.saasEndDate) {
+    updateData.saasEndDate = new Date(data.saasEndDate);
+  }
+  if (data.lastPaymentDueDate) {
+    updateData.lastPaymentDueDate = new Date(data.lastPaymentDueDate);
+  }
+
   const merchant = await prisma.merchant.update({
     where: { id },
-    data,
+    data: updateData,
   });
   revalidatePath('/');
   return merchant;
+}
+
+export async function deleteMerchant(id: number) {
+  await prisma.merchant.delete({
+    where: { id },
+  });
+  revalidatePath('/');
 }
 
 // ============== LEADS ==============
