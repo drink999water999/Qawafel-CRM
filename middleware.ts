@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
   // Allow access to login page and API routes
@@ -9,14 +10,19 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for session cookie
-  const session = request.cookies.get('session');
+  // Check for NextAuth session token
+  const token = await getToken({ 
+    req: request as any,
+    secret: process.env.NEXTAUTH_SECRET 
+  });
 
-  // If no session and not on login page, redirect to login
-  if (!session) {
+  // If no token and not on login page, redirect to login
+  if (!token) {
+    console.log('❌ MIDDLEWARE: No token, redirecting to /login');
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
+  console.log('✅ MIDDLEWARE: Token found, allowing access');
   return NextResponse.next();
 }
 
