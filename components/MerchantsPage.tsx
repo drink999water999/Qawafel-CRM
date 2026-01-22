@@ -53,7 +53,7 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
     category: '',
     email: '',
     phone: '',
-    accountStatus: true, // Boolean: true = Active, false = Inactive
+    accountStatus: true, // Boolean: true = Active, false = Deactivated
     // Subscription fields
     plan: '',
     signUpDate: '',
@@ -233,7 +233,7 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
   const handleDownload = () => {
     const csvHeaders = 'Name,Business Name,Category,Email,Phone,Account Status\n';
     const csvRows = filteredMerchants.map(merchant => 
-      `"${merchant.name}","${merchant.businessName}","${merchant.category}","${merchant.email}","${merchant.phone ? merchant.phone.toString() : ''}","${merchant.accountStatus ? 'Active' : 'Inactive'}"`
+      `"${merchant.name}","${merchant.businessName}","${merchant.category}","${merchant.email}","${merchant.phone ? merchant.phone.toString() : ''}","${merchant.accountStatus ? 'Active' : 'Deactivated'}"`
     ).join('\n');
     
     const csvContent = csvHeaders + csvRows;
@@ -344,7 +344,7 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.phone ? merchant.phone.toString() : '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${merchant.accountStatus ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                    {merchant.accountStatus ? 'Active' : 'Inactive'}
+                    {merchant.accountStatus ? 'Active' : 'Deactivated'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.plan || '-'}</td>
@@ -420,7 +420,7 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
                         />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
                         <span className="ml-3 text-sm font-medium text-gray-900">
-                          {formData.accountStatus ? 'Active' : 'Inactive'}
+                          {formData.accountStatus ? 'Active' : 'Deactivated'}
                         </span>
                       </label>
                     </div>

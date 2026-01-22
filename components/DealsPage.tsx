@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createDeal, updateDeal, deleteDeal, getDealStages } from '@/lib/actions';
 
@@ -183,6 +183,15 @@ export default function DealsPage({ deals }: DealsPageProps) {
     }
   };
 
+  // Memoize deals grouped by stage for performance
+  const dealsByStage = useMemo(() => {
+    const grouped: Record<string, typeof deals> = {};
+    stages.forEach(stage => {
+      grouped[stage.name] = deals.filter(d => d.stage.name === stage.name);
+    });
+    return grouped;
+  }, [deals, stages]);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -200,7 +209,7 @@ export default function DealsPage({ deals }: DealsPageProps) {
 
       <div className="flex space-x-4 overflow-x-auto pb-4">
         {stages.map((stage) => {
-          const stageDeals = deals.filter((d) => d.stage.name === stage.name);
+          const stageDeals = dealsByStage[stage.name] || [];
           const totalValue = stageDeals.reduce((sum, deal) => {
             const value = typeof deal.value === 'object' ? deal.value.toNumber?.() || 0 : deal.value;
             return sum + value;
