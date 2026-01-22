@@ -12,8 +12,8 @@ interface Merchant {
   businessName: string;
   category: string;
   email: string;
-  phone: string | null;
-  accountStatus: string;
+  phone: bigint | null;
+  accountStatus: boolean;
   // New subscription fields
   plan?: string | null;
   signUpDate?: Date | null;
@@ -53,7 +53,7 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
     category: '',
     email: '',
     phone: '',
-    accountStatus: 'Active',
+    accountStatus: true, // Boolean: true = Active, false = Inactive
     // Subscription fields
     plan: '',
     signUpDate: '',
@@ -91,8 +91,8 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
         businessName: editingMerchant.businessName,
         category: editingMerchant.category,
         email: editingMerchant.email,
-        phone: editingMerchant.phone || '',
-        accountStatus: editingMerchant.accountStatus || 'Active',
+        phone: editingMerchant.phone ? editingMerchant.phone.toString() : '',
+        accountStatus: editingMerchant.accountStatus ?? true,
         // Subscription fields
         plan: editingMerchant.plan || '',
         signUpDate: formatDate(editingMerchant.signUpDate),
@@ -120,7 +120,7 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
         category: '',
         email: '',
         phone: '',
-        accountStatus: 'Active',
+        accountStatus: true, // Default to Active (true)
         plan: '',
         signUpDate: '',
         trialFlag: false,
@@ -145,7 +145,7 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
     const term = searchTerm.toLowerCase();
     return (
       merchant.email.toLowerCase().includes(term) ||
-      (merchant.phone && merchant.phone.toLowerCase().includes(term)) ||
+      (merchant.phone && merchant.phone.toString().includes(term)) ||
       merchant.name.toLowerCase().includes(term) ||
       merchant.businessName.toLowerCase().includes(term)
     );
@@ -233,7 +233,7 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
   const handleDownload = () => {
     const csvHeaders = 'Name,Business Name,Category,Email,Phone,Account Status\n';
     const csvRows = filteredMerchants.map(merchant => 
-      `"${merchant.name}","${merchant.businessName}","${merchant.category}","${merchant.email}","${merchant.phone || ''}","${merchant.accountStatus}"`
+      `"${merchant.name}","${merchant.businessName}","${merchant.category}","${merchant.email}","${merchant.phone ? merchant.phone.toString() : ''}","${merchant.accountStatus ? 'Active' : 'Inactive'}"`
     ).join('\n');
     
     const csvContent = csvHeaders + csvRows;
@@ -341,8 +341,12 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.businessName}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.category}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.email}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.phone || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.accountStatus}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.phone ? merchant.phone.toString() : '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${merchant.accountStatus ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {merchant.accountStatus ? 'Active' : 'Inactive'}
+                  </span>
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.plan || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.signUpDate ? new Date(merchant.signUpDate).toLocaleDateString() : '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{merchant.trialFlag ? '✓' : '-'}</td>
@@ -402,16 +406,24 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Phone</label>
-                    <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3" />
+                    <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3" placeholder="Numbers only" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Account Status</label>
-                    <select value={formData.accountStatus} onChange={(e) => setFormData({ ...formData, accountStatus: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3">
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
-                      <option value="Suspended">Suspended</option>
-                      <option value="Deactivated">Deactivated</option>
-                    </select>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Account Status</label>
+                    <div className="flex items-center space-x-3">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.accountStatus}
+                          onChange={(e) => setFormData({ ...formData, accountStatus: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                        <span className="ml-3 text-sm font-medium text-gray-900">
+                          {formData.accountStatus ? 'Active' : 'Inactive'}
+                        </span>
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>

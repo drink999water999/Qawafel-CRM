@@ -23,23 +23,43 @@ export async function uploadLeadsCSV(csvText: string) {
           row[header] = values[index] || '';
         });
 
+        // Convert phone to BigInt if present
+        const phoneValue = row.phone ? BigInt(row.phone.replace(/\D/g, '')) : null;
+
         // Check if lead exists by email or phone
         const existing = await prisma.lead.findFirst({
           where: {
             OR: [
               { email: row.email },
-              { phone: row.phone }
+              phoneValue ? { phone: phoneValue } : { email: row.email } // Avoid null in OR
             ]
           }
         });
+
+        // Lookup status and source
+        const statusName = row.status || 'New';
+        const sourceName = row.source || 'CSV Import';
+        
+        const status = await prisma.leadStatus.findFirst({
+          where: { name: statusName }
+        });
+        const source = await prisma.leadSource.findFirst({
+          where: { name: sourceName }
+        });
+
+        if (!status || !source) {
+          console.error(`Invalid status or source for row ${i}`);
+          errors++;
+          continue;
+        }
 
         const leadData = {
           company: row.company || 'Unknown',
           contactName: row.contactname || row.contact_name || row.name || 'Unknown',
           email: row.email || '',
-          phone: row.phone || '',
-          status: row.status || 'New',
-          source: row.source || 'CSV Import',
+          phone: phoneValue || BigInt(0),
+          statusId: status.id,
+          sourceId: source.id,
           value: parseFloat(row.value || '0'),
         };
 
@@ -89,23 +109,29 @@ export async function uploadMerchantsCSV(csvText: string) {
           row[header] = values[index] || '';
         });
 
+        // Convert phone to BigInt if present
+        const phoneValue = row.phone ? BigInt(row.phone.replace(/\D/g, '')) : null;
+
         const existing = await prisma.merchant.findFirst({
           where: {
             OR: [
               { email: row.email },
-              { phone: row.phone }
+              phoneValue ? { phone: phoneValue } : { email: row.email } // Avoid null in OR
             ]
           }
         });
+
+        // Convert accountStatus to boolean
+        const accountStatusStr = (row.accountstatus || row.account_status || row.status || 'Active').toLowerCase();
+        const accountStatus = accountStatusStr === 'active' || accountStatusStr === 'true' || accountStatusStr === '1';
 
         const merchantData = {
           name: row.name || 'Unknown',
           businessName: row.businessname || row.business_name || row.name || 'Unknown',
           category: row.category || 'General',
           email: row.email || '',
-          phone: row.phone || '',
-          accountStatus: row.accountstatus || row.account_status || row.status || 'Active',
-          marketplaceStatus: row.marketplacestatus || row.marketplace_status || 'Activated',
+          phone: phoneValue,
+          accountStatus: accountStatus,
           joinDate: row.joindate || row.join_date ? new Date(row.joindate || row.join_date) : new Date(),
         };
 
@@ -153,11 +179,14 @@ export async function uploadCustomersCSV(csvText: string) {
           row[header] = values[index] || '';
         });
 
+        // Convert phone to BigInt if present
+        const phoneValue = row.phone ? BigInt(row.phone.replace(/\D/g, '')) : null;
+
         const existing = await prisma.customer.findFirst({
           where: {
             OR: [
               { email: row.email },
-              { phone: row.phone }
+              phoneValue ? { phone: phoneValue } : { email: row.email } // Avoid null in OR
             ]
           }
         });
@@ -166,7 +195,7 @@ export async function uploadCustomersCSV(csvText: string) {
           name: row.name || 'Unknown',
           company: row.company || 'Unknown',
           email: row.email || '',
-          phone: row.phone || '',
+          phone: phoneValue,
           accountStatus: row.accountstatus || row.account_status || row.status || 'Active',
           marketplaceStatus: row.marketplacestatus || row.marketplace_status || 'Activated',
           joinDate: row.joindate || row.join_date ? new Date(row.joindate || row.join_date) : new Date(),

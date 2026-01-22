@@ -2,24 +2,41 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createDeal, updateDeal, deleteDeal } from '@/lib/actions';
+import { createDeal, updateDeal, deleteDeal, getDealStages } from '@/lib/actions';
 
 interface Deal {
   id: number;
   title: string;
-  company: string;
-  contactName: string;
+  companyId: number;
+  contactId: number;
+  stageId: number;
+  company: {
+    id: number;
+    name: string;
+  };
+  contact: {
+    id: number;
+    name: string;
+    email?: string | null;
+    phone?: bigint | null;
+  };
+  stage: {
+    id: number;
+    name: string;
+    color: string;
+    order: number;
+    isWon: boolean;
+    isLost: boolean;
+  };
   value: number | { toNumber?: () => number };
-  stage: string;
   probability: number;
   closeDate: string | Date;
+  createdAt?: Date | string;
 }
 
 interface DealsPageProps {
   deals: Deal[];
 }
-
-const STAGES = ['New', 'Discovery', 'Proposal', 'Negotiation', 'Closed Won', 'Lost'];
 
 export default function DealsPage({ deals }: DealsPageProps) {
   const router = useRouter();
@@ -27,24 +44,43 @@ export default function DealsPage({ deals }: DealsPageProps) {
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [draggedDeal, setDraggedDeal] = useState<Deal | null>(null);
+  const [stages, setStages] = useState<Array<{ id: number; name: string; color: string; order: number; isWon: boolean; isLost: boolean }>>([]);
   const [formData, setFormData] = useState({
     title: '',
     company: '',
     contactName: '',
+    contactEmail: '',
+    contactPhone: '',
     value: 0,
     stage: 'New',
     probability: 50,
     closeDate: new Date().toISOString().split('T')[0],
   });
 
+  // Fetch stages on mount
+  useEffect(() => {
+    const fetchStages = async () => {
+      try {
+        const stagesData = await getDealStages();
+        setStages(stagesData);
+      } catch (error) {
+        console.error('Error fetching stages:', error);
+      }
+    };
+    fetchStages();
+  }, []);
+
   useEffect(() => {
     if (editingDeal) {
+      const value = typeof editingDeal.value === 'object' ? editingDeal.value.toNumber?.() || 0 : editingDeal.value;
       setFormData({
         title: editingDeal.title,
-        company: editingDeal.company,
-        contactName: editingDeal.contactName,
-        value: Number(editingDeal.value),
-        stage: editingDeal.stage,
+        company: editingDeal.company.name,
+        contactName: editingDeal.contact.name,
+        contactEmail: editingDeal.contact.email || '',
+        contactPhone: editingDeal.contact.phone ? editingDeal.contact.phone.toString() : '',
+        value: value,
+        stage: editingDeal.stage.name,
         probability: editingDeal.probability,
         closeDate: new Date(editingDeal.closeDate).toISOString().split('T')[0],
       });
@@ -53,13 +89,15 @@ export default function DealsPage({ deals }: DealsPageProps) {
         title: '',
         company: '',
         contactName: '',
+        contactEmail: '',
+        contactPhone: '',
         value: 0,
-        stage: 'New',
+        stage: stages.length > 0 ? stages[0].name : 'New',
         probability: 50,
         closeDate: new Date().toISOString().split('T')[0],
       });
     }
-  }, [editingDeal]);
+  }, [editingDeal, stages]);
 
   const handleOpenModal = (deal?: Deal) => {
     setEditingDeal(deal || null);
@@ -126,7 +164,7 @@ export default function DealsPage({ deals }: DealsPageProps) {
     e.preventDefault();
     e.stopPropagation();
     
-    if (!draggedDeal || draggedDeal.stage === newStage) {
+    if (!draggedDeal || draggedDeal.stage.name === newStage) {
       setDraggedDeal(null);
       return;
     }
@@ -161,22 +199,30 @@ export default function DealsPage({ deals }: DealsPageProps) {
       </div>
 
       <div className="flex space-x-4 overflow-x-auto pb-4">
-        {STAGES.map((stage) => {
-          const stageDeals = deals.filter((d) => d.stage === stage);
-          const totalValue = stageDeals.reduce((sum, deal) => sum + Number(deal.value), 0);
+        {stages.map((stage) => {
+          const stageDeals = deals.filter((d) => d.stage.name === stage.name);
+          const totalValue = stageDeals.reduce((sum, deal) => {
+            const value = typeof deal.value === 'object' ? deal.value.toNumber?.() || 0 : deal.value;
+            return sum + value;
+          }, 0);
 
           return (
             <div
-              key={stage}
+              key={stage.id}
               onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, stage)}
+              onDrop={(e) => handleDrop(e, stage.name)}
               className={`w-80 flex-shrink-0 bg-gray-50 rounded-lg p-3 border-2 transition-colors ${
-                draggedDeal && draggedDeal.stage !== stage ? 'border-primary border-dashed bg-green-50' : 'border-gray-200'
+                draggedDeal && draggedDeal.stage.name !== stage.name ? 'border-primary border-dashed bg-green-50' : 'border-gray-200'
               }`}
             >
               <div className="p-2 mb-3">
                 <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 text-xs font-semibold rounded bg-gray-200 text-gray-800">{stage}</span>
+                  <span 
+                    className="px-2 py-0.5 text-xs font-semibold rounded" 
+                    style={{ backgroundColor: `${stage.color}20`, color: stage.color }}
+                  >
+                    {stage.name}
+                  </span>
                 </div>
                 <div className="mt-3">
                   <span className="text-3xl font-bold text-gray-800">{stageDeals.length}</span>
@@ -195,7 +241,7 @@ export default function DealsPage({ deals }: DealsPageProps) {
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="font-bold text-sm text-gray-800">{deal.title}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{deal.company} - {deal.contactName}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{deal.company.name} - {deal.contact.name}</p>
                       </div>
                       <div className="flex space-x-1">
                         <button onClick={() => handleOpenModal(deal)} className="p-1 text-gray-400 hover:text-gray-700">
@@ -246,6 +292,16 @@ export default function DealsPage({ deals }: DealsPageProps) {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <label className="block text-sm font-medium text-gray-700">Contact Email</label>
+                  <input type="email" value={formData.contactEmail} onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Contact Phone</label>
+                  <input type="tel" value={formData.contactPhone} onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })} placeholder="Numbers only" className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                   <label className="block text-sm font-medium text-gray-700">Value (SAR)</label>
                   <input type="number" required min="0" value={formData.value} onChange={(e) => setFormData({ ...formData, value: parseFloat(e.target.value) || 0 })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" />
                 </div>
@@ -258,7 +314,7 @@ export default function DealsPage({ deals }: DealsPageProps) {
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Stage</label>
                   <select value={formData.stage} onChange={(e) => setFormData({ ...formData, stage: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary">
-                    {STAGES.map((s) => (<option key={s} value={s}>{s}</option>))}
+                    {stages.map((s) => (<option key={s.id} value={s.name}>{s.name}</option>))}
                   </select>
                 </div>
                 <div>

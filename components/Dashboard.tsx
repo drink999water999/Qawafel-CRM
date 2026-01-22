@@ -9,7 +9,14 @@ interface Activity {
 
 interface Deal {
   id: number;
-  stage: string;
+  stage: {
+    id: number;
+    name: string;
+    color: string;
+    order: number;
+    isWon: boolean;
+    isLost: boolean;
+  };
   value: number | { toNumber?: () => number };
 }
 
@@ -36,7 +43,7 @@ export default function Dashboard({ data, setCurrentPage }: DashboardProps) {
     },
     {
       label: 'Active Deals',
-      value: data.deals?.filter((d) => d.stage !== 'Lost' && d.stage !== 'Closed Won').length || 0,
+      value: data.deals?.filter((d) => !d.stage.isLost && !d.stage.isWon).length || 0,
       icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
       color: 'bg-green-500',
     },
@@ -54,7 +61,10 @@ export default function Dashboard({ data, setCurrentPage }: DashboardProps) {
     },
   ];
 
-  const totalDealsValue = data.deals?.reduce((sum: number, deal) => sum + Number(deal.value), 0) || 0;
+  const totalDealsValue = data.deals?.reduce((sum: number, deal) => {
+    const value = typeof deal.value === 'object' && deal.value.toNumber ? deal.value.toNumber() : Number(deal.value);
+    return sum + value;
+  }, 0) || 0;
 
   return (
     <div className="space-y-6">

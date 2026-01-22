@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { createLead, updateLead, deleteLead } from '@/lib/actions';
+import { createLead, updateLead, deleteLead, getLeadStatuses, getLeadSources } from '@/lib/actions';
 import { uploadLeadsCSV } from '@/lib/csvUpload';
 import Notes from './Notes';
 
@@ -11,10 +11,21 @@ interface Lead {
   company: string;
   contactName: string;
   email: string;
-  phone: string;
-  status: string;
-  source: string;
+  phone: bigint;
+  statusId: number;
+  sourceId: number;
+  status: {
+    id: number;
+    name: string;
+    color: string;
+    order: number;
+  };
+  source: {
+    id: number;
+    name: string;
+  };
   value: number | { toNumber?: () => number };
+  createdAt?: Date | string;
 }
 
 interface LeadsPageProps {
@@ -39,15 +50,27 @@ export default function LeadsPage({ leads }: LeadsPageProps) {
     value: 0,
   });
 
+  const [statuses, setStatuses] = useState<Array<{ id: number; name: string; color: string; order: number }>>([]);
+  const [sources, setSources] = useState<Array<{ id: number; name: string }>>([]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const statusColors: { [key: string]: string } = {
-    'New': 'bg-blue-100 text-blue-800',
-    'Contacted': 'bg-yellow-100 text-yellow-800',
-    'Proposal': 'bg-purple-100 text-purple-800',
-    'Qualified': 'bg-green-100 text-green-800',
-    'Lost': 'bg-red-100 text-red-800',
-  };
+  // Fetch statuses and sources on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [statusesData, sourcesData] = await Promise.all([
+          getLeadStatuses(),
+          getLeadSources()
+        ]);
+        setStatuses(statusesData);
+        setSources(sourcesData);
+      } catch (error) {
+        console.error('Error fetching statuses/sources:', error);
+      }
+    };
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (editingLead) {
@@ -55,10 +78,10 @@ export default function LeadsPage({ leads }: LeadsPageProps) {
         company: editingLead.company,
         contactName: editingLead.contactName,
         email: editingLead.email,
-        phone: editingLead.phone,
-        status: editingLead.status,
-        source: editingLead.source,
-        value: Number(editingLead.value),
+        phone: editingLead.phone.toString(),
+        status: editingLead.status.name,
+        source: editingLead.source.name,
+        value: typeof editingLead.value === 'object' ? editingLead.value.toNumber?.() || 0 : editingLead.value,
       });
     } else {
       setFormData({
@@ -67,11 +90,11 @@ export default function LeadsPage({ leads }: LeadsPageProps) {
         email: '',
         phone: '',
         status: 'New',
-        source: '',
+        source: statuses.length > 0 ? sources[0]?.name || '' : '',
         value: 0,
       });
     }
-  }, [editingLead]);
+  }, [editingLead, statuses, sources]);
 
   // Filter leads by search term (email or phone)
   const filteredLeads = leads.filter(lead => {
@@ -79,7 +102,7 @@ export default function LeadsPage({ leads }: LeadsPageProps) {
     const term = searchTerm.toLowerCase();
     return (
       lead.email.toLowerCase().includes(term) ||
-      lead.phone.toLowerCase().includes(term) ||
+      lead.phone.toString().includes(term) ||
       lead.company.toLowerCase().includes(term) ||
       lead.contactName.toLowerCase().includes(term)
     );
@@ -166,9 +189,10 @@ export default function LeadsPage({ leads }: LeadsPageProps) {
   // Download leads as CSV
   const handleDownload = () => {
     const csvHeaders = 'Company,Contact,Email,Phone,Status,Source,Value\n';
-    const csvRows = filteredLeads.map(lead => 
-      `"${lead.company}","${lead.contactName}","${lead.email}","${lead.phone}","${lead.status}","${lead.source}",${Number(lead.value)}`
-    ).join('\n');
+    const csvRows = filteredLeads.map(lead => {
+      const value = typeof lead.value === 'object' ? lead.value.toNumber?.() || 0 : lead.value;
+      return `"${lead.company}","${lead.contactName}","${lead.email}","${lead.phone.toString()}","${lead.status.name}","${lead.source.name}",${value}`;
+    }).join('\n');
     
     const csvContent = csvHeaders + csvRows;
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -261,14 +285,17 @@ export default function LeadsPage({ leads }: LeadsPageProps) {
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{lead.company}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{lead.contactName}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{lead.email}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{lead.phone}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{lead.phone.toString()}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[lead.status] || 'bg-gray-100 text-gray-800'}`}>
-                    {lead.status}
+                  <span 
+                    className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" 
+                    style={{ backgroundColor: `${lead.status.color}20`, color: lead.status.color }}
+                  >
+                    {lead.status.name}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{lead.source}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Intl.NumberFormat('en-SA', { style: 'currency', currency: 'SAR' }).format(Number(lead.value))}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{lead.source.name}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Intl.NumberFormat('en-SA', { style: 'currency', currency: 'SAR' }).format(typeof lead.value === 'object' ? lead.value.toNumber?.() || 0 : lead.value)}</td>
                 <td className="sticky right-0 bg-white px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2 shadow-[-2px_0_4px_rgba(0,0,0,0.1)]">
                   <button onClick={() => handleOpenModal(lead)} disabled={isLoading} className="text-primary hover:text-green-700 disabled:opacity-50">Edit</button>
                   <button onClick={() => handleDelete(lead.id)} disabled={isLoading} className="text-red-600 hover:text-red-900 disabled:opacity-50">Delete</button>
@@ -311,16 +338,18 @@ export default function LeadsPage({ leads }: LeadsPageProps) {
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Status</label>
                   <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary">
-                    <option value="New">New</option>
-                    <option value="Contacted">Contacted</option>
-                    <option value="Proposal">Proposal</option>
-                    <option value="Qualified">Qualified</option>
-                    <option value="Lost">Lost</option>
+                    {statuses.map((status) => (
+                      <option key={status.id} value={status.name}>{status.name}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Source</label>
-                  <input type="text" required value={formData.source} onChange={(e) => setFormData({ ...formData, source: e.target.value })} placeholder="e.g., Website" className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" />
+                  <select value={formData.source} onChange={(e) => setFormData({ ...formData, source: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary">
+                    {sources.map((source) => (
+                      <option key={source.id} value={source.name}>{source.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div>

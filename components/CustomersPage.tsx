@@ -11,7 +11,7 @@ interface Customer {
   name: string;
   company: string;
   email: string;
-  phone: string | null;
+  phone: bigint | null;
   accountStatus: string;
   marketplaceStatus: string;
 }
@@ -45,7 +45,7 @@ export default function CustomersPage({ customers }: CustomersPageProps) {
         name: editingCustomer.name,
         company: editingCustomer.company,
         email: editingCustomer.email,
-        phone: editingCustomer.phone || '',
+        phone: editingCustomer.phone ? editingCustomer.phone.toString() : '',
         accountStatus: editingCustomer.accountStatus || 'Active',
         marketplaceStatus: editingCustomer.marketplaceStatus || 'Activated',
       });
@@ -60,7 +60,7 @@ export default function CustomersPage({ customers }: CustomersPageProps) {
     const term = searchTerm.toLowerCase();
     return (
       customer.email.toLowerCase().includes(term) ||
-      (customer.phone && customer.phone.toLowerCase().includes(term)) ||
+      (customer.phone && customer.phone.toString().includes(term)) ||
       customer.name.toLowerCase().includes(term) ||
       customer.company.toLowerCase().includes(term)
     );
@@ -148,7 +148,7 @@ export default function CustomersPage({ customers }: CustomersPageProps) {
   const handleDownload = () => {
     const csvHeaders = 'Name,Company,Email,Phone,Account Status,Marketplace Status\n';
     const csvRows = filteredCustomers.map(customer => 
-      `"${customer.name}","${customer.company}","${customer.email}","${customer.phone || ''}","${customer.accountStatus}","${customer.marketplaceStatus}"`
+      `"${customer.name}","${customer.company}","${customer.email}","${customer.phone ? customer.phone.toString() : ''}","${customer.accountStatus}","${customer.marketplaceStatus}"`
     ).join('\n');
     
     const csvContent = csvHeaders + csvRows;
@@ -241,7 +241,7 @@ export default function CustomersPage({ customers }: CustomersPageProps) {
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{customer.name}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.company}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.email}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.phone || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.phone ? customer.phone.toString() : '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.accountStatus}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.marketplaceStatus}</td>
                 <td className="sticky right-0 bg-white px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2 shadow-[-2px_0_4px_rgba(0,0,0,0.1)]">

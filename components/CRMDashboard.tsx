@@ -16,7 +16,7 @@ interface UserProfile {
   id: number;
   fullName: string;
   email: string;
-  phone: string;
+  phone: bigint | null;
 }
 
 interface CRMData {
@@ -41,24 +41,54 @@ interface Lead {
   company: string;
   contactName: string;
   email: string;
-  phone: string;
-  status: string;
-  source: string;
+  phone: bigint;
+  statusId: number;
+  sourceId: number;
+  status: {
+    id: number;
+    name: string;
+    color: string;
+    order: number;
+  };
+  source: {
+    id: number;
+    name: string;
+  };
   value: number | { toNumber: () => number };
   businessSize?: string | null;
   numberOfBranches?: number | null;
   formToken?: string | null;
+  createdAt: Date | string;
 }
 
 interface Deal {
   id: number;
   title: string;
-  company: string;
-  contactName: string;
+  companyId: number;
+  contactId: number;
+  stageId: number;
+  company: {
+    id: number;
+    name: string;
+  };
+  contact: {
+    id: number;
+    name: string;
+    email?: string | null;
+    phone?: bigint | null;
+  };
+  stage: {
+    id: number;
+    name: string;
+    color: string;
+    order: number;
+    isWon: boolean;
+    isLost: boolean;
+  };
   value: number | { toNumber: () => number };
-  stage: string;
   probability: number;
   closeDate: string | Date;
+  createdAt: Date | string;
 }
 
 interface Merchant {
@@ -67,8 +97,8 @@ interface Merchant {
   businessName: string;
   category: string;
   email: string;
-  phone: string | null;
-  accountStatus: string;
+  phone: bigint | null;
+  accountStatus: boolean;
   joinDate?: Date;
 }
 
@@ -77,7 +107,7 @@ interface Customer {
   name: string;
   company: string;
   email: string;
-  phone: string | null;
+  phone: bigint | null;
   accountStatus: string;
   marketplaceStatus: string;
   joinDate?: Date;

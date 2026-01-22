@@ -41,7 +41,7 @@ model Customer {
   id                Int       @id @default(autoincrement())
   name              String
   email             String    @unique
-  phone             String?
+  phone             BigInt?
   accountStatus     String    @map("account_status")
   marketplaceStatus String    @map("marketplace_status")
   joinDate          DateTime  @map("join_date") @db.Date
@@ -53,6 +53,7 @@ model Customer {
   @@index([accountStatus])
   @@index([marketplaceStatus])
   @@index([joinDate])
+  @@index([phone])
   @@map("customers")
 }
 
@@ -60,8 +61,8 @@ model Merchant {
   id                      Int       @id @default(autoincrement())
   name                    String
   email                   String    @unique
-  phone                   String?
-  accountStatus           String    @map("account_status")
+  phone                   BigInt?
+  accountStatus           Boolean   @default(true) @map("account_status")
   joinDate                DateTime  @map("join_date") @db.Date
   businessName            String    @map("business_name")
   category                String
@@ -93,46 +94,141 @@ model Merchant {
   activities Activity[]
   notes      Note[]
 
-  @@index([accountStatus])
   @@index([plan])
   @@index([retentionStatus])
   @@index([verificationStatus])
   @@index([saasEndDate])
+  @@index([phone])
   @@map("merchants")
 }
 
-model Lead {
-  id               Int      @id @default(autoincrement())
-  company          String
-  contactName      String   @map("contact_name")
-  email            String
-  phone            String
-  status           String
-  source           String
-  value            Decimal  @db.Decimal(10, 2)
-  businessSize     String?  @map("business_size")
-  numberOfBranches Int?     @map("number_of_branches")
-  formToken        String?  @unique @map("form_token")
+// PHASE 1: Normalized Company table
+model Company {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  contacts Contact[]
+  deals    Deal[]
+  
+  @@index([name])
+  @@map("companies")
+}
 
-  notes Note[]
+// PHASE 1: Normalized Contact table
+model Contact {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String?
+  phone     BigInt?
+  companyId Int      @map("company_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  deals   Deal[]
+  
+  @@index([companyId])
+  @@index([email])
+  @@index([phone])
+  @@index([name])
+  @@map("contacts")
+}
+
+// PHASE 1: Deal stages lookup table
+model DealStage {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  description String?
+  color       String  @default("#3B82F6") // Default blue
+  order       Int     @unique
+  isWon       Boolean @default(false)
+  isLost      Boolean @default(false)
+  isActive    Boolean @default(true)
+  
+  deals Deal[]
+  
+  @@index([order])
+  @@index([isActive])
+  @@map("deal_stages")
+}
+
+// PHASE 1: Lead statuses lookup table
+model LeadStatus {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  description String?
+  color       String  @default("#10B981") // Default green
+  order       Int     @unique
+  isActive    Boolean @default(true)
+  
+  leads Lead[]
+  
+  @@index([order])
+  @@index([isActive])
+  @@map("lead_statuses")
+}
+
+// PHASE 1: Lead sources lookup table
+model LeadSource {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  description String?
+  isActive    Boolean @default(true)
+  
+  leads Lead[]
+  
+  @@index([isActive])
+  @@map("lead_sources")
+}
+
+model Lead {
+  id               Int        @id @default(autoincrement())
+  company          String
+  contactName      String     @map("contact_name")
+  email            String
+  phone            BigInt
+  statusId         Int        @map("status_id")
+  sourceId         Int        @map("source_id")
+  value            Decimal    @db.Decimal(10, 2)
+  businessSize     String?    @map("business_size")
+  numberOfBranches Int?       @map("number_of_branches")
+  formToken        String?    @unique @map("form_token")
+  createdAt        DateTime   @default(now()) @map("created_at")
+
+  status LeadStatus @relation(fields: [statusId], references: [id], onDelete: Restrict)
+  source LeadSource @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  notes  Note[]
 
   @@index([email])
-  @@index([status])
+  @@index([statusId])
+  @@index([sourceId])
+  @@index([phone])
+  @@index([company])
+  @@index([createdAt])
   @@map("leads")
 }
 
+// PHASE 1: Normalized Deal table
 model Deal {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   title       String
-  company     String
-  contactName String   @map("contact_name")
-  value       Decimal  @db.Decimal(10, 2)
-  stage       String
+  companyId   Int       @map("company_id")
+  contactId   Int       @map("contact_id")
+  stageId     Int       @map("stage_id")
+  value       Decimal   @db.Decimal(10, 2)
   probability Int
-  closeDate   DateTime @map("close_date") @db.Date
+  closeDate   DateTime  @map("close_date") @db.Date
+  createdAt   DateTime  @default(now()) @map("created_at")
+  
+  company Company   @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  contact Contact   @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  stage   DealStage @relation(fields: [stageId], references: [id], onDelete: Restrict)
 
-  @@index([stage])
+  @@index([companyId])
+  @@index([contactId])
+  @@index([stageId])
   @@index([closeDate])
+  @@index([createdAt])
   @@map("deals")
 }
 
@@ -169,17 +265,19 @@ model UserProfile {
   id       Int    @id @default(autoincrement())
   fullName String @map("full_name")
   email    String
-  phone    String
+  phone    BigInt
 
   @@map("user_profile")
 }
 
+// Notes table with polymorphic relations and entityType
 model Note {
-  id        Int      @id @default(autoincrement())
-  content   String   @db.Text
-  createdAt DateTime @default(now()) @map("created_at")
-  userId    String   @map("user_id")
-  userName  String   @map("user_name")
+  id         Int      @id @default(autoincrement())
+  content    String   @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+  userId     String   @map("user_id")
+  userName   String   @map("user_name")
+  entityType String   @map("entity_type") // "lead", "customer", "merchant"
   
   // Polymorphic relations - one of these will be set
   leadId     Int?     @map("lead_id")
@@ -195,5 +293,6 @@ model Note {
   @@index([merchantId])
   @@index([createdAt])
   @@index([userId])
+  @@index([entityType])
   @@map("notes")
 }

@@ -48,6 +48,7 @@ export async function addNote(
       content: string;
       userId: string;
       userName: string;
+      entityType: string; // NEW: Added entityType
       leadId?: number;
       customerId?: number;
       merchantId?: number;
@@ -55,6 +56,7 @@ export async function addNote(
       content,
       userId: session.userId,
       userName: session.name || session.email || 'Unknown User',
+      entityType, // NEW: Set entityType
     };
 
     if (entityType === 'lead') {

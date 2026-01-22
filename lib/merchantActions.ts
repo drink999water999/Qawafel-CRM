@@ -10,8 +10,7 @@ export async function updateMerchant(id: number, data: {
   phone?: string;
   businessName: string;
   category: string;
-  accountStatus: string;
-  marketplaceStatus: string;
+  accountStatus: boolean;
   plan?: string;
   trialFlag?: boolean;
   signUpDate?: string;
@@ -33,11 +32,10 @@ export async function updateMerchant(id: number, data: {
     const updateData: {
       name: string;
       email: string;
-      phone: string | null;
+      phone: bigint | null;
       businessName: string;
       category: string;
-      accountStatus: string;
-      marketplaceStatus: string;
+      accountStatus: boolean;
       plan: string | null;
       trialFlag: boolean;
       crId: string | null;
@@ -55,11 +53,10 @@ export async function updateMerchant(id: number, data: {
     } = {
       name: data.name,
       email: data.email,
-      phone: data.phone || null,
+      phone: data.phone ? BigInt(data.phone) : null,
       businessName: data.businessName,
       category: data.category,
       accountStatus: data.accountStatus,
-      marketplaceStatus: data.marketplaceStatus,
       plan: data.plan || null,
       trialFlag: data.trialFlag || false,
       crId: data.crId || null,
