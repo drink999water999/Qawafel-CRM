@@ -222,21 +222,22 @@ export default function DealsPage({ deals: initialDeals }: DealsPageProps) {
   }, [deals, stages]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Deals</h1>
-          <p className="mt-1 text-gray-500">Track deals through your sales pipeline</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Deals</h1>
+          <p className="mt-1 text-sm sm:text-base text-gray-500">Track deals through your sales pipeline</p>
         </div>
-        <button onClick={() => handleOpenModal()} disabled={isLoading} className="px-4 py-2 bg-primary text-white font-bold rounded-md hover:bg-green-700 flex items-center disabled:opacity-50">
+        <button onClick={() => handleOpenModal()} disabled={isLoading} className="px-4 py-2 bg-primary text-white font-bold rounded-md hover:bg-green-700 flex items-center justify-center disabled:opacity-50 whitespace-nowrap">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
           </svg>
-          Add Deal
+          <span className="hidden sm:inline">Add Deal</span>
+          <span className="sm:hidden">Add</span>
         </button>
       </div>
 
-      <div className="flex space-x-4 overflow-x-auto pb-4">
+      <div className="flex space-x-3 sm:space-x-4 overflow-x-auto pb-4 snap-x snap-mandatory touch-pan-x">
         {stages.map((stage) => {
           const stageDeals = dealsByStage[stage.name] || [];
           const totalValue = stageDeals.reduce((sum, deal) => {
@@ -249,7 +250,7 @@ export default function DealsPage({ deals: initialDeals }: DealsPageProps) {
               key={stage.id}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, stage.name)}
-              className={`w-80 flex-shrink-0 bg-gray-50 rounded-lg p-3 border-2 transition-colors ${
+              className={`w-72 sm:w-80 flex-shrink-0 bg-gray-50 rounded-lg p-2 sm:p-3 border-2 transition-colors snap-start ${
                 draggedDeal && draggedDeal.stage.name !== stage.name ? 'border-primary border-dashed bg-green-50' : 'border-gray-200'
               }`}
             >

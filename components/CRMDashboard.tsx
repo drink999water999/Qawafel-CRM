@@ -199,13 +199,13 @@ export default function CRMDashboard({ initialData }: CRMDashboardProps) {
         onPageChange={setCurrentPage} 
         userRole={initialData.userRole}
       />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
         <Header user={{
           name: initialData.userName,
           email: initialData.userEmail,
           image: initialData.userImage,
         }} />
-        <main className="flex-1 overflow-y-auto p-6">{renderPage()}</main>
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">{renderPage()}</main>
       </div>
     </div>
   );

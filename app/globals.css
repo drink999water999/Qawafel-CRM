@@ -21,3 +21,46 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Poppins', 'Inter', sans-serif;
   @apply font-semibold text-gray-900;
 }
+
+/* Mobile Optimizations */
+@media (max-width: 1024px) {
+  /* Smooth scrolling for tables */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  
+  /* Better touch targets */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Modal full screen on mobile */
+  .fixed.inset-0 > div {
+    @apply max-h-screen;
+  }
+}
+
+/* Snap scrolling for kanban board */
+.snap-x {
+  scroll-snap-type: x mandatory;
+}
+
+.snap-start {
+  scroll-snap-align: start;
+}
+
+/* Hide scrollbars but keep functionality */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 6px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0.05);
+}
