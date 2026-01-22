@@ -38,8 +38,9 @@ interface DealsPageProps {
   deals: Deal[];
 }
 
-export default function DealsPage({ deals }: DealsPageProps) {
+export default function DealsPage({ deals: initialDeals }: DealsPageProps) {
   const router = useRouter();
+  const [deals, setDeals] = useState<Deal[]>(initialDeals);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -56,6 +57,11 @@ export default function DealsPage({ deals }: DealsPageProps) {
     probability: 50,
     closeDate: new Date().toISOString().split('T')[0],
   });
+
+  // Sync deals when initialDeals change
+  useEffect(() => {
+    setDeals(initialDeals);
+  }, [initialDeals]);
 
   // Fetch stages on mount
   useEffect(() => {
@@ -160,26 +166,49 @@ export default function DealsPage({ deals }: DealsPageProps) {
     setDraggedDeal(null);
   };
 
-  const handleDrop = async (e: React.DragEvent, newStage: string) => {
+  const handleDrop = async (e: React.DragEvent, newStageName: string) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (!draggedDeal || draggedDeal.stage.name === newStage) {
+    if (!draggedDeal || draggedDeal.stage.name === newStageName) {
       setDraggedDeal(null);
       return;
     }
 
     const dealToUpdate = draggedDeal;
+    const originalDeals = [...deals]; // Store original state for rollback
     setDraggedDeal(null);
     
-    // Optimistic update - update UI immediately without reload
+    // Find the new stage object
+    const newStage = stages.find(s => s.name === newStageName);
+    if (!newStage) {
+      console.error('Stage not found:', newStageName);
+      return;
+    }
+
+    // OPTIMISTIC UPDATE: Update UI immediately
+    setDeals(prevDeals => 
+      prevDeals.map(deal => 
+        deal.id === dealToUpdate.id 
+          ? { 
+              ...deal, 
+              stage: newStage,
+              stageId: newStage.id 
+            } 
+          : deal
+      )
+    );
+
+    // Call backend in background
     try {
-      await updateDeal(dealToUpdate.id, { stage: newStage });
-      // Silently refresh data in background
+      await updateDeal(dealToUpdate.id, { stage: newStageName });
+      // Success - silently refresh to sync any server changes
       router.refresh();
     } catch (error) {
       console.error('Error updating deal stage:', error);
-      alert('Failed to update deal stage. Please refresh the page.');
+      // ROLLBACK: Revert to original state on error
+      setDeals(originalDeals);
+      alert('Failed to update deal stage. Changes have been reverted.');
     }
   };
 
