@@ -101,3 +101,25 @@ export async function updateUserApproval(id: string, approved: boolean) {
     return { success: false, error: 'Failed to update user approval' };
   }
 }
+
+export async function updateUserRole(id: string, role: string) {
+  await requireAdmin();
+  
+  try {
+    // Validate role
+    if (!['user', 'editor', 'admin'].includes(role)) {
+      return { success: false, error: 'Invalid role' };
+    }
+
+    await prisma.user.update({
+      where: { id },
+      data: { role },
+    });
+
+    revalidatePath('/admin/approvals');
+    return { success: true };
+  } catch (error) {
+    console.error('Update role error:', error);
+    return { success: false, error: 'Failed to update user role' };
+  }
+}
