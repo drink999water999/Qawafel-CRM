@@ -125,14 +125,54 @@ export async function uploadMerchantsCSV(csvText: string) {
         const accountStatusStr = (row.accountstatus || row.account_status || row.status || 'Active').toLowerCase();
         const accountStatus = accountStatusStr === 'active' || accountStatusStr === 'true' || accountStatusStr === '1';
 
+        // Convert trial flag to boolean
+        const trialFlagStr = (row.trialflag || row.trial_flag || 'No').toLowerCase();
+        const trialFlag = trialFlagStr === 'yes' || trialFlagStr === 'true' || trialFlagStr === '1';
+
+        // Helper function to parse dates safely
+        const parseDate = (dateStr: string | undefined) => {
+          if (!dateStr || dateStr.trim() === '' || dateStr === 'null' || dateStr === 'undefined') return null;
+          try {
+            const date = new Date(dateStr);
+            return isNaN(date.getTime()) ? null : date;
+          } catch {
+            return null;
+          }
+        };
+
         const merchantData = {
+          // Basic Info
           name: row.name || 'Unknown',
           businessName: row.businessname || row.business_name || row.name || 'Unknown',
           category: row.category || 'General',
           email: row.email || '',
           phone: phoneValue,
           accountStatus: accountStatus,
-          joinDate: row.joindate || row.join_date ? new Date(row.joindate || row.join_date) : new Date(),
+          joinDate: parseDate(row.joindate || row.join_date) || new Date(),
+          
+          // Subscription Fields
+          plan: row.plan && row.plan.trim() !== '' ? row.plan : null,
+          signUpDate: parseDate(row.signupdate || row.sign_up_date),
+          trialFlag: trialFlag,
+          saasStartDate: parseDate(row.saasstartdate || row.saas_start_date),
+          saasEndDate: parseDate(row.saasenddate || row.saas_end_date),
+          
+          // CR Fields
+          crId: row.crid || row.cr_id || null,
+          crCertificate: row.crcertificate || row.cr_certificate || null,
+          
+          // VAT Fields
+          vatId: row.vatid || row.vat_id || null,
+          vatCertificate: row.vatcertificate || row.vat_certificate || null,
+          
+          // ZATCA Fields
+          zatcaIdentificationType: row.zatcaidentificationtype || row.zatca_identification_type || null,
+          zatcaId: row.zatcaid || row.zatca_id || null,
+          
+          // Status & Payment
+          verificationStatus: row.verificationstatus || row.verification_status || null,
+          retentionStatus: row.retentionstatus || row.retention_status || null,
+          lastPaymentDueDate: parseDate(row.lastpaymentduedate || row.last_payment_due_date),
         };
 
         if (existing) {

@@ -100,6 +100,16 @@ interface Merchant {
   phone: bigint | null;
   accountStatus: boolean;
   joinDate?: Date;
+  // Subscription fields
+  plan?: string | null;
+  signUpDate?: Date | null;
+  trialFlag?: boolean;
+  saasStartDate?: Date | null;
+  saasEndDate?: Date | null;
+  // Payment
+  lastPaymentDueDate?: Date | null;
+  retentionStatus?: string | null;
+  verificationStatus?: string | null;
 }
 
 interface Customer {

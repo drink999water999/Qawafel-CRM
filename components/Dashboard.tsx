@@ -1,12 +1,5 @@
 'use client';
 
-interface Activity {
-  id: number;
-  text: string;
-  timestamp: number;
-  icon: string;
-}
-
 interface Deal {
   id: number;
   stage: {
@@ -20,12 +13,22 @@ interface Deal {
   value: number | { toNumber?: () => number };
 }
 
+interface Merchant {
+  id: number;
+  name: string;
+  businessName: string;
+  accountStatus: boolean;
+  lastPaymentDueDate?: Date | null;
+  retentionStatus?: string | null;
+  saasEndDate?: Date | null;
+  joinDate?: Date;
+}
+
 interface DashboardData {
   leads?: unknown[];
   deals?: Deal[];
-  merchants?: unknown[];
+  merchants?: Merchant[];
   customers?: unknown[];
-  activities?: Activity[];
 }
 
 interface DashboardProps {
@@ -34,6 +37,31 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ data, setCurrentPage }: DashboardProps) {
+  // Calculate merchant metrics
+  const today = new Date();
+  const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const sixtyDaysAgo = new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+  const activeMerchants = data.merchants?.filter(m => m.accountStatus === true).length || 0;
+  const deactivatedMerchants = data.merchants?.filter(m => m.accountStatus === false).length || 0;
+  
+  const endingSoon = data.merchants?.filter(m => {
+    if (!m.lastPaymentDueDate || m.accountStatus === false) return false;
+    const dueDate = new Date(m.lastPaymentDueDate);
+    return dueDate >= today && dueDate <= thirtyDaysFromNow;
+  }).length || 0;
+
+  const churned = data.merchants?.filter(m => {
+    return m.retentionStatus?.toLowerCase() === 'churned' || 
+           (m.accountStatus === false && m.retentionStatus?.toLowerCase() !== 'active');
+  }).length || 0;
+
+  const dormant = data.merchants?.filter(m => {
+    if (!m.joinDate || m.accountStatus === false) return false;
+    const joinDate = new Date(m.joinDate);
+    return m.accountStatus === true && joinDate < sixtyDaysAgo && !m.lastPaymentDueDate;
+  }).length || 0;
+
   const stats = [
     {
       label: 'Total Leads',
@@ -48,10 +76,10 @@ export default function Dashboard({ data, setCurrentPage }: DashboardProps) {
       color: 'bg-green-500',
     },
     {
-      label: 'Total Merchants',
-      value: data.merchants?.length || 0,
-      icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
-      color: 'bg-purple-500',
+      label: 'Active Merchants',
+      value: activeMerchants,
+      icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+      color: 'bg-emerald-500',
     },
     {
       label: 'Total Customers',
@@ -95,27 +123,77 @@ export default function Dashboard({ data, setCurrentPage }: DashboardProps) {
       {/* Pipeline Value Card */}
       <div className="bg-gradient-to-r from-primary to-green-700 border border-gray-200 rounded-lg p-6 text-white">
         <h3 className="text-lg font-semibold mb-2">Total Pipeline Value</h3>
-        <p className="text-4xl font-bold">${new Intl.NumberFormat('en-US', { minimumFractionDigits: 0 }).format(totalDealsValue)}</p>
+        <p className="text-4xl font-bold">SAR {new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(totalDealsValue)}</p>
         <p className="text-sm mt-2 opacity-90">Across all active deals</p>
       </div>
 
-      {/* Recent Activity */}
+      {/* Merchant Health Metrics */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-xl font-bold mb-4 text-gray-900">Recent Activity</h3>
-        <div className="space-y-4">
-          {data.activities?.slice(0, 5).map((activity) => (
-            <div key={activity.id} className="flex items-start space-x-3 pb-4 border-b border-gray-100 last:border-0">
-              <div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        <h3 className="text-xl font-bold mb-4 text-gray-900">Merchant Health</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Churned - Rose/Pink theme */}
+          <div className="bg-rose-50 border-2 border-rose-200 rounded-xl p-5 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-rose-600 uppercase tracking-wide">Churned</p>
+                <p className="text-3xl font-bold text-rose-700 mt-2">{churned}</p>
+                <p className="text-xs text-rose-500 mt-1">Lost merchants</p>
+              </div>
+              <div className="bg-rose-100 p-3 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-rose-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
                 </svg>
               </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-800">{activity.text}</p>
-                <p className="text-xs text-gray-500 mt-1">{new Date(activity.timestamp).toLocaleString()}</p>
+            </div>
+          </div>
+
+          {/* Dormant - Amber theme */}
+          <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-5 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-amber-600 uppercase tracking-wide">Dormant</p>
+                <p className="text-3xl font-bold text-amber-700 mt-2">{dormant}</p>
+                <p className="text-xs text-amber-500 mt-1">No subscriptions</p>
+              </div>
+              <div className="bg-amber-100 p-3 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                </svg>
               </div>
             </div>
-          ))}
+          </div>
+
+          {/* Ending Soon - Orange theme */}
+          <div className="bg-orange-50 border-2 border-orange-300 rounded-xl p-5 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-orange-600 uppercase tracking-wide">Ending Soon</p>
+                <p className="text-3xl font-bold text-orange-700 mt-2">{endingSoon}</p>
+                <p className="text-xs text-orange-500 mt-1">Due within 30 days</p>
+              </div>
+              <div className="bg-orange-100 p-3 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Deactivated - Slate theme */}
+          <div className="bg-slate-50 border-2 border-slate-300 rounded-xl p-5 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Deactivated</p>
+                <p className="text-3xl font-bold text-slate-700 mt-2">{deactivatedMerchants}</p>
+                <p className="text-xs text-slate-500 mt-1">Inactive accounts</p>
+              </div>
+              <div className="bg-slate-200 p-3 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
