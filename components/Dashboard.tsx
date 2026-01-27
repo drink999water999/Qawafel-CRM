@@ -40,7 +40,6 @@ export default function Dashboard({ data, setCurrentPage }: DashboardProps) {
   // Calculate merchant metrics
   const today = new Date();
   const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-  const sixtyDaysAgo = new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000);
 
   const activeMerchants = data.merchants?.filter(m => m.accountStatus === true).length || 0;
   const deactivatedMerchants = data.merchants?.filter(m => m.accountStatus === false).length || 0;
@@ -51,15 +50,14 @@ export default function Dashboard({ data, setCurrentPage }: DashboardProps) {
     return dueDate >= today && dueDate <= thirtyDaysFromNow;
   }).length || 0;
 
+  // Churned: Merchants with retentionStatus = 'churned'
   const churned = data.merchants?.filter(m => {
-    return m.retentionStatus?.toLowerCase() === 'churned' || 
-           (m.accountStatus === false && m.retentionStatus?.toLowerCase() !== 'active');
+    return m.retentionStatus?.toLowerCase() === 'churned';
   }).length || 0;
 
+  // Dormant: Merchants with retentionStatus = 'dormant'
   const dormant = data.merchants?.filter(m => {
-    if (!m.joinDate || m.accountStatus === false) return false;
-    const joinDate = new Date(m.joinDate);
-    return m.accountStatus === true && joinDate < sixtyDaysAgo && !m.lastPaymentDueDate;
+    return m.retentionStatus?.toLowerCase() === 'dormant';
   }).length || 0;
 
   const stats = [
@@ -137,7 +135,7 @@ export default function Dashboard({ data, setCurrentPage }: DashboardProps) {
               <div>
                 <p className="text-sm font-semibold text-rose-600 uppercase tracking-wide">Churned</p>
                 <p className="text-3xl font-bold text-rose-700 mt-2">{churned}</p>
-                <p className="text-xs text-rose-500 mt-1">Lost merchants</p>
+                <p className="text-xs text-rose-500 mt-1">Inactive for +90 days</p>
               </div>
               <div className="bg-rose-100 p-3 rounded-full">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-rose-600" viewBox="0 0 20 20" fill="currentColor">
@@ -153,7 +151,7 @@ export default function Dashboard({ data, setCurrentPage }: DashboardProps) {
               <div>
                 <p className="text-sm font-semibold text-amber-600 uppercase tracking-wide">Dormant</p>
                 <p className="text-3xl font-bold text-amber-700 mt-2">{dormant}</p>
-                <p className="text-xs text-amber-500 mt-1">No subscriptions</p>
+                <p className="text-xs text-amber-500 mt-1">Inactive for +30 days</p>
               </div>
               <div className="bg-amber-100 p-3 rounded-full">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
