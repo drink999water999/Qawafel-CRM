@@ -2,6 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { SignJWT } from 'jose';
 
+// Flexible OTP verification configuration
+const OTP_CONFIG = {
+  // API Endpoints
+  verifyUrl: process.env.OTP_VERIFY_URL || process.env.OTP_PLATFORM_VERIFY_URL,
+  
+  // Authentication
+  apiKey: process.env.OTP_API_KEY,
+  authHeader: process.env.OTP_AUTH_HEADER || 'Authorization',
+  authPrefix: process.env.OTP_AUTH_PREFIX || 'Bearer',
+  
+  // Request field names (customize for your OTP provider)
+  phoneField: process.env.OTP_PHONE_FIELD || 'phone',
+  otpField: process.env.OTP_OTP_FIELD || 'otp',
+  sessionIdField: process.env.OTP_SESSION_ID_FIELD || 'session_id',
+  
+  // Response field names (comma-separated fallbacks)
+  successFields: (process.env.OTP_SUCCESS_FIELDS || 'verified,success,valid').split(','),
+};
+
 export async function POST(request: NextRequest) {
   try {
     const { phone, otp, sessionId } = await request.json();
@@ -21,51 +40,94 @@ export async function POST(request: NextRequest) {
       ? cleanPhone 
       : `966${cleanPhone}`;
 
-    // **AKEDLY.IO VERIFICATION**
-    const AKEDLY_VERIFY_URL = process.env.OTP_PLATFORM_VERIFY_URL;
-    const AKEDLY_API_KEY = process.env.OTP_API_KEY;
-
-    if (!AKEDLY_VERIFY_URL || !AKEDLY_API_KEY) {
-      console.error('❌ AKEDLY VERIFICATION CREDENTIALS MISSING');
+    // Check if OTP verification service is configured
+    if (!OTP_CONFIG.verifyUrl || !OTP_CONFIG.apiKey) {
+      console.error('❌ OTP VERIFICATION SERVICE NOT CONFIGURED');
+      console.error('Missing:', {
+        OTP_VERIFY_URL: !OTP_CONFIG.verifyUrl,
+        OTP_API_KEY: !OTP_CONFIG.apiKey,
+      });
       return NextResponse.json(
         { error: 'OTP verification service not configured' },
         { status: 500 }
       );
     }
 
-    console.log('🔍 Verifying OTP via Akedly.io');
+    console.log('🔍 Verifying OTP');
     console.log('Phone:', `+${phoneWithCountryCode}`);
     console.log('Session ID:', sessionId);
 
     try {
-      const response = await fetch(AKEDLY_VERIFY_URL, {
+      // Build flexible request body based on configuration
+      const requestBody: Record<string, string> = {};
+      
+      // Add phone using configured field name
+      requestBody[OTP_CONFIG.phoneField] = `+${phoneWithCountryCode}`;
+      
+      // Also add common alternative field names for compatibility
+      if (OTP_CONFIG.phoneField !== 'phoneNumber') {
+        requestBody['phoneNumber'] = `+${phoneWithCountryCode}`;
+      }
+      if (OTP_CONFIG.phoneField !== 'to') {
+        requestBody['to'] = `+${phoneWithCountryCode}`;
+      }
+      
+      // Add OTP code using configured field name
+      requestBody[OTP_CONFIG.otpField] = otp;
+      
+      // Also add common alternative field names
+      if (OTP_CONFIG.otpField !== 'code') {
+        requestBody['code'] = otp;
+      }
+      if (OTP_CONFIG.otpField !== 'verification_code') {
+        requestBody['verification_code'] = otp;
+      }
+      
+      // Add session ID using configured field name
+      if (sessionId && OTP_CONFIG.sessionIdField) {
+        requestBody[OTP_CONFIG.sessionIdField] = sessionId;
+        
+        // Also add common alternative field names
+        if (OTP_CONFIG.sessionIdField !== 'request_id') {
+          requestBody['request_id'] = sessionId;
+        }
+      }
+
+      // Build headers
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authentication header
+      const authValue = OTP_CONFIG.authPrefix 
+        ? `${OTP_CONFIG.authPrefix} ${OTP_CONFIG.apiKey}`
+        : OTP_CONFIG.apiKey!;
+      
+      headers[OTP_CONFIG.authHeader!] = authValue;
+      
+      // Also add as x-api-key for compatibility
+      if (OTP_CONFIG.authHeader !== 'x-api-key') {
+        headers['x-api-key'] = OTP_CONFIG.apiKey!;
+      }
+
+      console.log('Request URL:', OTP_CONFIG.verifyUrl);
+      console.log('Request Body:', JSON.stringify(requestBody, null, 2));
+
+      const response = await fetch(OTP_CONFIG.verifyUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${AKEDLY_API_KEY}`,
-          'x-api-key': AKEDLY_API_KEY,
-        },
-        body: JSON.stringify({
-          phone: `+${phoneWithCountryCode}`,
-          phoneNumber: `+${phoneWithCountryCode}`,
-          to: `+${phoneWithCountryCode}`,
-          otp: otp,
-          code: otp,
-          verification_code: otp,
-          session_id: sessionId,
-          request_id: sessionId,
-        }),
+        headers,
+        body: JSON.stringify(requestBody),
       });
 
       const responseText = await response.text();
-      console.log('Akedly Verify Response Status:', response.status);
-      console.log('Akedly Verify Response:', responseText);
+      console.log('Response Status:', response.status);
+      console.log('Response Body:', responseText);
 
       let data;
       try {
         data = JSON.parse(responseText);
       } catch {
-        console.error('Failed to parse Akedly verify response');
+        console.error('Failed to parse response as JSON');
         if (!response.ok) {
           return NextResponse.json(
             { error: 'Invalid OTP' },
@@ -76,15 +138,30 @@ export async function POST(request: NextRequest) {
 
       if (!response.ok) {
         const errorMessage = data?.message || data?.error || 'Invalid OTP';
-        console.error('❌ Akedly Verification Failed:', errorMessage);
+        console.error('❌ OTP Verification Failed:', errorMessage);
         return NextResponse.json(
           { error: errorMessage },
           { status: 401 }
         );
       }
 
-      // Check if verification was successful
-      const isVerified = data?.verified || data?.success || data?.valid || response.ok;
+      // Check if verification was successful (check multiple possible fields)
+      let isVerified = false;
+      
+      for (const field of OTP_CONFIG.successFields) {
+        const trimmedField = field.trim();
+        if (data?.[trimmedField] === true || data?.[trimmedField] === 'true' || data?.[trimmedField] === 1) {
+          isVerified = true;
+          console.log(`Verification success found in field: ${trimmedField}`);
+          break;
+        }
+      }
+      
+      // If status is 200 and no explicit success field found, assume success
+      if (!isVerified && response.status === 200) {
+        isVerified = true;
+        console.log('Assuming success based on HTTP 200 status');
+      }
       
       if (!isVerified) {
         console.error('❌ OTP verification failed');
@@ -94,7 +171,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      console.log('✅ OTP verified successfully via Akedly.io');
+      console.log('✅ OTP verified successfully');
 
       // Create session token using JWT
       const secret = new TextEncoder().encode(
@@ -124,7 +201,7 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (fetchError: unknown) {
-      console.error('❌ Akedly Verification API Error:', fetchError);
+      console.error('❌ OTP Verification API Error:', fetchError);
       const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error';
       return NextResponse.json(
         { error: `Verification failed: ${errorMessage}` },
