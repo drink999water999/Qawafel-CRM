@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 // Frontend callback URL: https://yourdomain.vercel.app/auth/callback
 // Your OTP platform will redirect users here after verification
 
-export default function AuthCallback() {
+function CallbackHandler() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -17,7 +17,7 @@ export default function AuthCallback() {
 
     if (error) {
       // Handle error - redirect to login with error message
-      router.push(`/?error=${encodeURIComponent(error)}`);
+      router.push(`/login?error=${encodeURIComponent(error)}`);
       return;
     }
 
@@ -27,7 +27,7 @@ export default function AuthCallback() {
       router.push('/');
     } else {
       // Unknown status - redirect to login
-      router.push('/');
+      router.push('/login');
     }
   }, [searchParams, router]);
 
@@ -38,5 +38,20 @@ export default function AuthCallback() {
         <p className="mt-4 text-gray-600">Verifying your phone number...</p>
       </div>
     </div>
+  );
+}
+
+export default function AuthCallback() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <CallbackHandler />
+    </Suspense>
   );
 }
