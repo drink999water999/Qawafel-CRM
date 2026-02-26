@@ -118,60 +118,79 @@ export const authOptions: AuthOptions = {
       console.log('Provider:', account?.provider);
       console.log('User:', user?.email);
       
-      if (account?.provider === "credentials") {
-        console.log('✅ Allowing credentials sign in');
-        console.log('========================================\n');
-        return true;
-      }
-
-      if (account?.provider === "google") {
-        console.log('🔍 Checking Google user...');
-        const existingUser = await prisma.user.findUnique({
-          where: { email: user.email! },
-        });
-
-        if (existingUser && existingUser.approved) {
-          console.log('✅ Existing approved Google user');
-          await prisma.user.update({
-            where: { email: user.email! },
-            data: {
-              name: user.name || existingUser.name,
-              image: user.image || existingUser.image,
-              provider: 'google',
-            }
-          });
+      try {
+        if (account?.provider === "credentials") {
+          console.log('✅ Allowing credentials sign in');
           console.log('========================================\n');
           return true;
         }
 
-        if (existingUser && !existingUser.approved) {
-          console.log('❌ User not approved');
-          console.log('========================================\n');
-          return '/login?error=pending';
+        if (account?.provider === "google") {
+          console.log('🔍 Checking Google user...');
+          
+          if (!user.email) {
+            console.log('❌ No email provided');
+            console.log('========================================\n');
+            return '/login?error=no_email';
+          }
+
+          try {
+            const existingUser = await prisma.user.findUnique({
+              where: { email: user.email },
+            });
+
+            if (existingUser && existingUser.approved) {
+              console.log('✅ Existing approved Google user');
+              await prisma.user.update({
+                where: { email: user.email },
+                data: {
+                  name: user.name || existingUser.name,
+                  image: user.image || existingUser.image,
+                  provider: 'google',
+                }
+              });
+              console.log('========================================\n');
+              return true;
+            }
+
+            if (existingUser && !existingUser.approved) {
+              console.log('❌ User not approved');
+              console.log('========================================\n');
+              return '/login?error=pending';
+            }
+
+            console.log('📝 Creating signup request');
+            const existingRequest = await prisma.signupRequest.findUnique({
+              where: { email: user.email },
+            });
+
+            if (!existingRequest) {
+              await prisma.signupRequest.create({
+                data: {
+                  email: user.email,
+                  name: user.name || user.email,
+                  image: user.image,
+                  provider: "google",
+                  status: "pending",
+                },
+              });
+            }
+            console.log('========================================\n');
+            return '/login?error=signup_requested';
+          } catch (dbError) {
+            console.error('❌ Database error in Google sign-in:', dbError);
+            console.log('========================================\n');
+            return '/login?error=database_error';
+          }
         }
 
-        console.log('📝 Creating signup request');
-        const existingRequest = await prisma.signupRequest.findUnique({
-          where: { email: user.email! },
-        });
-
-        if (!existingRequest) {
-          await prisma.signupRequest.create({
-            data: {
-              email: user.email!,
-              name: user.name || user.email!,
-              image: user.image,
-              provider: "google",
-              status: "pending",
-            },
-          });
-        }
         console.log('========================================\n');
-        return '/login?error=signup_requested';
+        return true;
+      } catch (error) {
+        console.error('❌ Error in signIn callback:', error);
+        console.log('========================================\n');
+        return '/login?error=auth_error';
       }
-
-      console.log('========================================\n');
-      return true;
     },
     async jwt({ token, user }) {
       console.log('\n========================================');

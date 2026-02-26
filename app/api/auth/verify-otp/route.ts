@@ -21,71 +21,119 @@ export async function POST(request: NextRequest) {
       ? cleanPhone 
       : `966${cleanPhone}`;
 
-    // **CONFIGURE YOUR OTP PLATFORM HERE**
-    // Replace with your actual OTP platform verification endpoint
-    const OTP_PLATFORM_URL = process.env.OTP_PLATFORM_VERIFY_URL || 'https://your-otp-platform.com/api/verify';
-    const OTP_API_KEY = process.env.OTP_API_KEY || '';
+    // **AKEDLY.IO VERIFICATION**
+    const AKEDLY_VERIFY_URL = process.env.OTP_PLATFORM_VERIFY_URL;
+    const AKEDLY_API_KEY = process.env.OTP_API_KEY;
 
-    // Verify OTP with your platform
-    const response = await fetch(OTP_PLATFORM_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OTP_API_KEY}`,
-      },
-      body: JSON.stringify({
-        phone: `+${phoneWithCountryCode}`, // Send with + prefix
-        otp: otp,
-        session_id: sessionId, // If your platform uses session IDs
-      }),
-    });
-
-    if (!response.ok) {
+    if (!AKEDLY_VERIFY_URL || !AKEDLY_API_KEY) {
+      console.error('❌ AKEDLY VERIFICATION CREDENTIALS MISSING');
       return NextResponse.json(
-        { error: 'Invalid OTP' },
-        { status: 401 }
+        { error: 'OTP verification service not configured' },
+        { status: 500 }
       );
     }
 
-    const verificationData = await response.json();
+    console.log('🔍 Verifying OTP via Akedly.io');
+    console.log('Phone:', `+${phoneWithCountryCode}`);
+    console.log('Session ID:', sessionId);
 
-    // Check if verification was successful
-    if (!verificationData.verified && !verificationData.success) {
+    try {
+      const response = await fetch(AKEDLY_VERIFY_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${AKEDLY_API_KEY}`,
+          'x-api-key': AKEDLY_API_KEY,
+        },
+        body: JSON.stringify({
+          phone: `+${phoneWithCountryCode}`,
+          phoneNumber: `+${phoneWithCountryCode}`,
+          to: `+${phoneWithCountryCode}`,
+          otp: otp,
+          code: otp,
+          verification_code: otp,
+          session_id: sessionId,
+          request_id: sessionId,
+        }),
+      });
+
+      const responseText = await response.text();
+      console.log('Akedly Verify Response Status:', response.status);
+      console.log('Akedly Verify Response:', responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        console.error('Failed to parse Akedly verify response');
+        if (!response.ok) {
+          return NextResponse.json(
+            { error: 'Invalid OTP' },
+            { status: 401 }
+          );
+        }
+      }
+
+      if (!response.ok) {
+        const errorMessage = data?.message || data?.error || 'Invalid OTP';
+        console.error('❌ Akedly Verification Failed:', errorMessage);
+        return NextResponse.json(
+          { error: errorMessage },
+          { status: 401 }
+        );
+      }
+
+      // Check if verification was successful
+      const isVerified = data?.verified || data?.success || data?.valid || response.ok;
+      
+      if (!isVerified) {
+        console.error('❌ OTP verification failed');
+        return NextResponse.json(
+          { error: 'Invalid OTP' },
+          { status: 401 }
+        );
+      }
+
+      console.log('✅ OTP verified successfully via Akedly.io');
+
+      // Create session token using JWT
+      const secret = new TextEncoder().encode(
+        process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production'
+      );
+
+      const token = await new SignJWT({ phone: phoneWithCountryCode })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setIssuedAt()
+        .setExpirationTime('24h')
+        .sign(secret);
+
+      // Set session cookie
+      const cookieStore = await cookies();
+      cookieStore.set('auth-token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24, // 24 hours
+        path: '/',
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Phone verified successfully',
+        phone: phoneWithCountryCode,
+      });
+
+    } catch (fetchError: unknown) {
+      console.error('❌ Akedly Verification API Error:', fetchError);
+      const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error';
       return NextResponse.json(
-        { error: 'OTP verification failed' },
-        { status: 401 }
+        { error: `Verification failed: ${errorMessage}` },
+        { status: 500 }
       );
     }
 
-    // Create session token using JWT
-    const secret = new TextEncoder().encode(
-      process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production'
-    );
-
-    const token = await new SignJWT({ phone: phoneWithCountryCode })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('24h')
-      .sign(secret);
-
-    // Set session cookie
-    const cookieStore = await cookies();
-    cookieStore.set('auth-token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24, // 24 hours
-      path: '/',
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: 'Phone verified successfully',
-      phone: phoneWithCountryCode,
-    });
-
-  } catch (error) {
-    console.error('Verify OTP error:', error);
+  } catch (error: unknown) {
+    console.error('❌ Verify OTP Error:', error);
     return NextResponse.json(
       { error: 'Verification failed' },
       { status: 500 }

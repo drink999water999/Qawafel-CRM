@@ -37,43 +37,93 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // **CONFIGURE YOUR OTP PLATFORM HERE**
-    // Replace with your actual OTP platform API
-    const OTP_PLATFORM_URL = process.env.OTP_PLATFORM_URL || 'https://your-otp-platform.com/api/send';
-    const OTP_API_KEY = process.env.OTP_API_KEY || '';
+    // **AKEDLY.IO CONFIGURATION**
+    const AKEDLY_API_URL = process.env.OTP_PLATFORM_URL;
+    const AKEDLY_API_KEY = process.env.OTP_API_KEY;
 
-    // Example: Send OTP via your platform
-    const response = await fetch(OTP_PLATFORM_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OTP_API_KEY}`,
-      },
-      body: JSON.stringify({
-        phone: `+${phoneWithCountryCode}`, // Send with + prefix
-        // Callback URLs for your OTP platform
-        callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
-        // Some platforms might need additional fields
-        channel: 'sms', // or 'whatsapp'
-        sender_id: process.env.OTP_SENDER_ID || 'YourApp',
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to send OTP');
+    if (!AKEDLY_API_URL || !AKEDLY_API_KEY) {
+      console.error('❌ AKEDLY CREDENTIALS MISSING');
+      console.error('OTP_PLATFORM_URL:', AKEDLY_API_URL);
+      console.error('OTP_API_KEY:', AKEDLY_API_KEY ? 'SET' : 'NOT SET');
+      return NextResponse.json(
+        { error: 'OTP service not configured. Please add OTP_PLATFORM_URL and OTP_API_KEY to Vercel.' },
+        { status: 500 }
+      );
     }
 
-    const data = await response.json();
+    console.log('📱 Sending OTP via Akedly.io');
+    console.log('API URL:', AKEDLY_API_URL);
+    console.log('Phone:', `+${phoneWithCountryCode}`);
 
-    return NextResponse.json({
-      success: true,
-      message: 'OTP sent successfully',
-      // Return session ID if your OTP platform provides one
-      sessionId: data.session_id || data.request_id,
-    });
+    try {
+      // Akedly.io API call
+      const response = await fetch(AKEDLY_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${AKEDLY_API_KEY}`,
+          'x-api-key': AKEDLY_API_KEY,
+        },
+        body: JSON.stringify({
+          phone: `+${phoneWithCountryCode}`,
+          phoneNumber: `+${phoneWithCountryCode}`,
+          to: `+${phoneWithCountryCode}`,
+          country_code: '966',
+          mobile: cleanPhone.slice(-9),
+          channel: 'sms',
+          callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
+          app_name: process.env.OTP_SENDER_ID || 'Qawafel CRM',
+        }),
+      });
 
-  } catch (error) {
-    console.error('Send OTP error:', error);
+      const responseText = await response.text();
+      console.log('Akedly Response Status:', response.status);
+      console.log('Akedly Response Body:', responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        console.error('Failed to parse Akedly response as JSON');
+        if (!response.ok) {
+          return NextResponse.json(
+            { error: `OTP service error (${response.status}): ${responseText}` },
+            { status: response.status }
+          );
+        }
+      }
+
+      if (!response.ok) {
+        const errorMessage = data?.message || data?.error || data?.msg || 'Failed to send OTP';
+        console.error('❌ Akedly Error:', errorMessage);
+        console.error('Full response:', data);
+        return NextResponse.json(
+          { error: `Failed to send OTP: ${errorMessage}` },
+          { status: response.status }
+        );
+      }
+
+      console.log('✅ OTP sent successfully via Akedly.io');
+      console.log('Session ID:', data?.session_id || data?.request_id || data?.id);
+
+      return NextResponse.json({
+        success: true,
+        message: 'OTP sent successfully',
+        sessionId: data?.session_id || data?.request_id || data?.id || `akedly-${Date.now()}`,
+      });
+
+    } catch (fetchError: unknown) {
+      console.error('❌ Akedly API Connection Error:', fetchError);
+      const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error';
+      console.error('Error details:', errorMessage);
+      return NextResponse.json(
+        { error: `Failed to connect to OTP service: ${errorMessage}` },
+        { status: 500 }
+      );
+    }
+
+  } catch (error: unknown) {
+    console.error('❌ Send OTP Error:', error);
     return NextResponse.json(
       { error: 'Failed to send OTP' },
       { status: 500 }
