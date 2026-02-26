@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getNotes, addNote, deleteNote } from '@/lib/noteActions';
+import { getNotes, addNote } from '@/lib/noteActions';
 
 interface Note {
   id: number;
@@ -53,17 +53,6 @@ export default function Notes({ entityType, entityId, entityName }: NotesProps) 
     }
     
     setIsSubmitting(false);
-  };
-
-  const handleDeleteNote = async (noteId: number) => {
-    if (!confirm('Delete this note?')) return;
-
-    const result = await deleteNote(noteId);
-    if (result.success) {
-      loadNotes();
-    } else {
-      alert(result.error || 'Failed to delete note');
-    }
   };
 
   const formatDate = (date: Date) => {
@@ -122,13 +111,6 @@ export default function Notes({ entityType, entityId, entityName }: NotesProps) 
                     {formatDate(note.createdAt)}
                   </p>
                 </div>
-                <button
-                  onClick={() => handleDeleteNote(note.id)}
-                  className="text-red-600 hover:text-red-800 text-sm"
-                  title="Delete note"
-                >
-                  Delete
-                </button>
               </div>
               <p className="text-gray-700 whitespace-pre-wrap">{note.content}</p>
             </div>

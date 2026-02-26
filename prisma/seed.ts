@@ -137,7 +137,12 @@ async function main() {
       email: 'mohammed@khandates.com',
       phone: BigInt('5550201'),
       accountStatus: true, // Active
-      joinDate: new Date('2023-03-10'),
+      signUpDate: new Date('2023-03-10'),
+      plan: 'Premium',
+      trialFlag: false,
+      saasStartDate: new Date('2023-03-10'),
+      saasEndDate: new Date('2024-03-10'),
+      retentionStatus: 'Active',
     },
   });
 
@@ -151,7 +156,10 @@ async function main() {
       email: 'aisha@abdullahspices.com',
       phone: BigInt('5550202'),
       accountStatus: false, // Inactive/Deactivated
-      joinDate: new Date('2023-04-05'),
+      signUpDate: new Date('2023-04-05'),
+      plan: 'Standard',
+      trialFlag: false,
+      retentionStatus: 'Churned',
     },
   });
 

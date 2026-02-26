@@ -21,7 +21,8 @@ interface Merchant {
   lastPaymentDueDate?: Date | null;
   retentionStatus?: string | null;
   saasEndDate?: Date | null;
-  joinDate?: Date;
+  trialStartDate?: Date | null;
+  trialEndDate?: Date | null;
 }
 
 interface DashboardData {
@@ -44,10 +45,18 @@ export default function Dashboard({ data, setCurrentPage }: DashboardProps) {
   const activeMerchants = data.merchants?.filter(m => m.accountStatus === true).length || 0;
   const deactivatedMerchants = data.merchants?.filter(m => m.accountStatus === false).length || 0;
   
-  const endingSoon = data.merchants?.filter(m => {
+  // Subscription Ending Soon: Based on lastPaymentDueDate
+  const subscriptionEndingSoon = data.merchants?.filter(m => {
     if (!m.lastPaymentDueDate || m.accountStatus === false) return false;
     const dueDate = new Date(m.lastPaymentDueDate);
     return dueDate >= today && dueDate <= thirtyDaysFromNow;
+  }).length || 0;
+
+  // Trial Ending Soon: Based on trialEndDate
+  const trialEndingSoon = data.merchants?.filter(m => {
+    if (!m.trialEndDate || m.accountStatus === false) return false;
+    const endDate = new Date(m.trialEndDate);
+    return endDate >= today && endDate <= thirtyDaysFromNow;
   }).length || 0;
 
   // Churned: Merchants with retentionStatus = 'churned'
@@ -128,9 +137,18 @@ export default function Dashboard({ data, setCurrentPage }: DashboardProps) {
       {/* Merchant Health Metrics */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h3 className="text-xl font-bold mb-4 text-gray-900">Merchant Health</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {/* Churned - Rose/Pink theme */}
-          <div className="bg-rose-50 border-2 border-rose-200 rounded-xl p-5 hover:shadow-md transition-shadow">
+          <div 
+            onClick={() => {
+              setCurrentPage?.('merchants');
+              // Store filter in sessionStorage so MerchantsPage can read it
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('merchantFilter', 'churned');
+              }
+            }}
+            className="bg-rose-50 border-2 border-rose-200 rounded-xl p-5 hover:shadow-lg transition-shadow cursor-pointer"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold text-rose-600 uppercase tracking-wide">Churned</p>
@@ -146,7 +164,15 @@ export default function Dashboard({ data, setCurrentPage }: DashboardProps) {
           </div>
 
           {/* Dormant - Amber theme */}
-          <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-5 hover:shadow-md transition-shadow">
+          <div 
+            onClick={() => {
+              setCurrentPage?.('merchants');
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('merchantFilter', 'dormant');
+              }
+            }}
+            className="bg-amber-50 border-2 border-amber-200 rounded-xl p-5 hover:shadow-lg transition-shadow cursor-pointer"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold text-amber-600 uppercase tracking-wide">Dormant</p>
@@ -161,13 +187,45 @@ export default function Dashboard({ data, setCurrentPage }: DashboardProps) {
             </div>
           </div>
 
-          {/* Ending Soon - Orange theme */}
-          <div className="bg-orange-50 border-2 border-orange-300 rounded-xl p-5 hover:shadow-md transition-shadow">
+          {/* Trial Ending Soon - Purple theme */}
+          <div 
+            onClick={() => {
+              setCurrentPage?.('merchants');
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('merchantFilter', 'trial_ending');
+              }
+            }}
+            className="bg-purple-50 border-2 border-purple-300 rounded-xl p-5 hover:shadow-lg transition-shadow cursor-pointer"
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-orange-600 uppercase tracking-wide">Ending Soon</p>
-                <p className="text-3xl font-bold text-orange-700 mt-2">{endingSoon}</p>
-                <p className="text-xs text-orange-500 mt-1">Due within 30 days</p>
+                <p className="text-sm font-semibold text-purple-600 uppercase tracking-wide">Trial Ending</p>
+                <p className="text-3xl font-bold text-purple-700 mt-2">{trialEndingSoon}</p>
+                <p className="text-xs text-purple-500 mt-1">Within 30 days</p>
+              </div>
+              <div className="bg-purple-100 p-3 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Subscription Ending Soon - Orange theme */}
+          <div 
+            onClick={() => {
+              setCurrentPage?.('merchants');
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('merchantFilter', 'subscription_ending');
+              }
+            }}
+            className="bg-orange-50 border-2 border-orange-300 rounded-xl p-5 hover:shadow-lg transition-shadow cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-orange-600 uppercase tracking-wide">Subscription Ending</p>
+                <p className="text-3xl font-bold text-orange-700 mt-2">{subscriptionEndingSoon}</p>
+                <p className="text-xs text-orange-500 mt-1">Within 30 days</p>
               </div>
               <div className="bg-orange-100 p-3 rounded-full">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-600" viewBox="0 0 20 20" fill="currentColor">
@@ -178,7 +236,15 @@ export default function Dashboard({ data, setCurrentPage }: DashboardProps) {
           </div>
 
           {/* Deactivated - Slate theme */}
-          <div className="bg-slate-50 border-2 border-slate-300 rounded-xl p-5 hover:shadow-md transition-shadow">
+          <div 
+            onClick={() => {
+              setCurrentPage?.('merchants');
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('merchantFilter', 'deactivated');
+              }
+            }}
+            className="bg-slate-50 border-2 border-slate-300 rounded-xl p-5 hover:shadow-lg transition-shadow cursor-pointer"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Deactivated</p>

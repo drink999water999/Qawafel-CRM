@@ -99,11 +99,12 @@ interface Merchant {
   email: string;
   phone: bigint | null;
   accountStatus: boolean;
-  joinDate?: Date;
   // Subscription fields
   plan?: string | null;
   signUpDate?: Date | null;
   trialFlag?: boolean;
+  trialStartDate?: Date | null;
+  trialEndDate?: Date | null;
   saasStartDate?: Date | null;
   saasEndDate?: Date | null;
   // Payment

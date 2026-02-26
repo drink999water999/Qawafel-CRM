@@ -98,7 +98,7 @@ export async function createMerchant(data: {
       email: data.email,
       phone: data.phone ? BigInt(data.phone) : null,
       accountStatus: data.accountStatus,
-      joinDate: new Date(),
+      signUpDate: new Date(), // Fixed: was joinDate
     },
   });
   revalidatePath('/');
@@ -574,6 +574,9 @@ export async function createProposal(data: {
   title: string;
   clientName: string;
   clientCompany: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  category?: string;
   value: number;
   currency: string;
   status: string;
@@ -582,7 +585,17 @@ export async function createProposal(data: {
 }) {
   const proposal = await prisma.proposal.create({
     data: {
-      ...data,
+      title: data.title,
+      clientName: data.clientName,
+      clientCompany: data.clientCompany,
+      clientEmail: data.clientEmail || null,
+      clientPhone: data.clientPhone ? BigInt(data.clientPhone.replace(/\D/g, '')) : null,
+      category: data.category || null,
+      value: data.value,
+      currency: data.currency,
+      status: data.status,
+      validUntil: data.validUntil,
+      sentDate: data.sentDate,
       createdAt: new Date(),
     },
   });
@@ -596,6 +609,9 @@ export async function updateProposal(
     title?: string;
     clientName?: string;
     clientCompany?: string;
+    clientEmail?: string;
+    clientPhone?: string;
+    category?: string;
     value?: number;
     currency?: string;
     status?: string;
@@ -603,9 +619,23 @@ export async function updateProposal(
     sentDate?: Date;
   }
 ) {
+  const updateData: Record<string, unknown> = {};
+  
+  if (data.title !== undefined) updateData.title = data.title;
+  if (data.clientName !== undefined) updateData.clientName = data.clientName;
+  if (data.clientCompany !== undefined) updateData.clientCompany = data.clientCompany;
+  if (data.clientEmail !== undefined) updateData.clientEmail = data.clientEmail || null;
+  if (data.clientPhone !== undefined) updateData.clientPhone = data.clientPhone ? BigInt(data.clientPhone.replace(/\D/g, '')) : null;
+  if (data.category !== undefined) updateData.category = data.category || null;
+  if (data.value !== undefined) updateData.value = data.value;
+  if (data.currency !== undefined) updateData.currency = data.currency;
+  if (data.status !== undefined) updateData.status = data.status;
+  if (data.validUntil !== undefined) updateData.validUntil = data.validUntil;
+  if (data.sentDate !== undefined) updateData.sentDate = data.sentDate;
+  
   const proposal = await prisma.proposal.update({
     where: { id },
-    data,
+    data: updateData,
   });
   revalidatePath('/');
   return proposal;

@@ -9,6 +9,9 @@ interface Proposal {
   title: string;
   clientName: string;
   clientCompany: string;
+  clientEmail?: string | null;
+  clientPhone?: bigint | null;
+  category?: string | null;
   value: number | { toNumber?: () => number };
   currency: string;
   status: string;
@@ -29,6 +32,9 @@ export default function ProposalsPage({ proposals }: ProposalsPageProps) {
     title: '',
     clientName: '',
     clientCompany: '',
+    clientEmail: '',
+    clientPhone: '',
+    category: '',
     value: 0,
     currency: 'SAR',
     status: 'Draft',
@@ -41,6 +47,9 @@ export default function ProposalsPage({ proposals }: ProposalsPageProps) {
         title: editingProposal.title,
         clientName: editingProposal.clientName,
         clientCompany: editingProposal.clientCompany,
+        clientEmail: editingProposal.clientEmail || '',
+        clientPhone: editingProposal.clientPhone ? editingProposal.clientPhone.toString() : '',
+        category: editingProposal.category || '',
         value: Number(editingProposal.value),
         currency: editingProposal.currency,
         status: editingProposal.status,
@@ -51,6 +60,9 @@ export default function ProposalsPage({ proposals }: ProposalsPageProps) {
         title: '',
         clientName: '',
         clientCompany: '',
+        clientEmail: '',
+        clientPhone: '',
+        category: '',
         value: 0,
         currency: 'SAR',
         status: 'Draft',
@@ -163,6 +175,11 @@ export default function ProposalsPage({ proposals }: ProposalsPageProps) {
                 <div><label className="block text-sm font-medium text-gray-700">Client Name</label><input type="text" required value={formData.clientName} onChange={(e) => setFormData({ ...formData, clientName: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" /></div>
                 <div><label className="block text-sm font-medium text-gray-700">Client Company</label><input type="text" required value={formData.clientCompany} onChange={(e) => setFormData({ ...formData, clientCompany: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" /></div>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="block text-sm font-medium text-gray-700">Client Email</label><input type="email" value={formData.clientEmail} onChange={(e) => setFormData({ ...formData, clientEmail: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" /></div>
+                <div><label className="block text-sm font-medium text-gray-700">Client Phone</label><input type="tel" value={formData.clientPhone} onChange={(e) => setFormData({ ...formData, clientPhone: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" /></div>
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700">Category</label><input type="text" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} placeholder="e.g., Marketing, Development, Consulting" className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" /></div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-2"><label className="block text-sm font-medium text-gray-700">Value</label><input type="number" required min="0" value={formData.value} onChange={(e) => setFormData({ ...formData, value: parseFloat(e.target.value) || 0 })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" /></div>
                 <div><label className="block text-sm font-medium text-gray-700">Currency</label><input type="text" required value={formData.currency} onChange={(e) => setFormData({ ...formData, currency: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" /></div>

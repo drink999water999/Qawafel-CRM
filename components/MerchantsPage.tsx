@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createMerchant, updateMerchant, deleteMerchant } from '@/lib/actions';
 import { uploadMerchantsCSV } from '@/lib/csvUpload';
+import { getMerchantUsers } from '@/lib/merchantUserActions';
 import Notes from './Notes';
 
 interface Merchant {
@@ -14,10 +15,12 @@ interface Merchant {
   email: string;
   phone: bigint | null;
   accountStatus: boolean;
-  // New subscription fields
+  // Subscription fields
   plan?: string | null;
   signUpDate?: Date | null;
   trialFlag?: boolean;
+  trialStartDate?: Date | null;
+  trialEndDate?: Date | null;
   saasStartDate?: Date | null;
   saasEndDate?: Date | null;
   // CR fields
@@ -35,6 +38,16 @@ interface Merchant {
   retentionStatus?: string | null;
 }
 
+interface MerchantUser {
+  id: number;
+  name: string;
+  email: string;
+  phone: bigint | null;
+  role: string | null;
+  mappingId: number;
+  createdAt: Date;
+}
+
 interface MerchantsPageProps {
   merchants: Merchant[];
 }
@@ -47,6 +60,8 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
   const [editingMerchant, setEditingMerchant] = useState<Merchant | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [merchantUsers, setMerchantUsers] = useState<MerchantUser[]>([]);
+  const [filterStatus, setFilterStatus] = useState<string>('');
   const [formData, setFormData] = useState({
     name: '',
     businessName: '',
@@ -58,6 +73,8 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
     plan: '',
     signUpDate: '',
     trialFlag: false,
+    trialStartDate: '',
+    trialEndDate: '',
     saasStartDate: '',
     saasEndDate: '',
     // CR fields
@@ -97,6 +114,8 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
         plan: editingMerchant.plan || '',
         signUpDate: formatDate(editingMerchant.signUpDate),
         trialFlag: editingMerchant.trialFlag || false,
+        trialStartDate: formatDate(editingMerchant.trialStartDate),
+        trialEndDate: formatDate(editingMerchant.trialEndDate),
         saasStartDate: formatDate(editingMerchant.saasStartDate),
         saasEndDate: formatDate(editingMerchant.saasEndDate),
         // CR fields
@@ -124,6 +143,8 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
         plan: '',
         signUpDate: '',
         trialFlag: false,
+        trialStartDate: '',
+        trialEndDate: '',
         saasStartDate: '',
         saasEndDate: '',
         crId: '',
@@ -139,26 +160,75 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
     }
   }, [editingMerchant]);
 
-  // Filter merchants by search term
+  // Handle filter from sessionStorage (set by Dashboard)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const filter = sessionStorage.getItem('merchantFilter');
+      if (filter) {
+        setFilterStatus(filter);
+        // Clear it after reading so it doesn't persist
+        sessionStorage.removeItem('merchantFilter');
+      }
+    }
+  }, []);
+
+  // Filter merchants by search term and status
   const filteredMerchants = merchants.filter(merchant => {
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-    return (
-      merchant.email.toLowerCase().includes(term) ||
-      (merchant.phone && merchant.phone.toString().includes(term)) ||
-      merchant.name.toLowerCase().includes(term) ||
-      merchant.businessName.toLowerCase().includes(term)
-    );
+    // Search term filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      const matchesSearch = (
+        merchant.email.toLowerCase().includes(term) ||
+        (merchant.phone && merchant.phone.toString().includes(term)) ||
+        merchant.name.toLowerCase().includes(term) ||
+        merchant.businessName.toLowerCase().includes(term)
+      );
+      if (!matchesSearch) return false;
+    }
+    
+    // Status filter
+    if (filterStatus) {
+      if (filterStatus === 'churned' && merchant.retentionStatus?.toLowerCase() !== 'churned') return false;
+      if (filterStatus === 'dormant' && merchant.retentionStatus?.toLowerCase() !== 'dormant') return false;
+      if (filterStatus === 'deactivated' && merchant.accountStatus !== false) return false;
+      if (filterStatus === 'trial_ending') {
+        if (!merchant.trialEndDate) return false;
+        const today = new Date();
+        const thirtyDays = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const endDate = new Date(merchant.trialEndDate);
+        if (!(endDate >= today && endDate <= thirtyDays)) return false;
+      }
+      if (filterStatus === 'subscription_ending') {
+        if (!merchant.lastPaymentDueDate) return false;
+        const today = new Date();
+        const thirtyDays = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const dueDate = new Date(merchant.lastPaymentDueDate);
+        if (!(dueDate >= today && dueDate <= thirtyDays)) return false;
+      }
+    }
+    
+    return true;
   });
 
-  const handleOpenModal = (merchant?: Merchant) => {
+  const handleOpenModal = async (merchant?: Merchant) => {
     setEditingMerchant(merchant || null);
     setIsModalOpen(true);
+    
+    // Load merchant users if editing
+    if (merchant) {
+      const result = await getMerchantUsers(merchant.id);
+      if (result.success && result.users) {
+        setMerchantUsers(result.users);
+      }
+    } else {
+      setMerchantUsers([]);
+    }
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingMerchant(null);
+    setMerchantUsers([]);
   };
 
   const handleOpenNotes = (merchant: Merchant) => {
@@ -213,7 +283,16 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
       const csvText = await file.text();
       const result = await uploadMerchantsCSV(csvText);
       if (result.success) {
-        alert(`Successfully uploaded ${result.imported} merchants`);
+        const messages = [];
+        if ((result.imported ?? 0) > 0) messages.push(`${result.imported ?? 0} inserted`);
+        if ((result.updated ?? 0) > 0) messages.push(`${result.updated ?? 0} updated`);
+        if ((result.errors ?? 0) > 0) messages.push(`${result.errors ?? 0} failed`);
+        
+        const message = messages.length > 0 
+          ? `CSV Upload Complete: ${messages.join(', ')}` 
+          : 'No records processed';
+        
+        alert(message);
         router.refresh();
       } else {
         alert(`Upload failed: ${result.error}`);
@@ -306,6 +385,26 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
+
+      {/* Active Filter Display */}
+      {filterStatus && (
+        <div className="mb-4 flex items-center gap-2">
+          <span className="text-sm text-gray-600">Filtered by:</span>
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+            {filterStatus === 'churned' && '🌹 Churned'}
+            {filterStatus === 'dormant' && '🟡 Dormant'}
+            {filterStatus === 'trial_ending' && '🟣 Trial Ending'}
+            {filterStatus === 'subscription_ending' && '🟠 Subscription Ending'}
+            {filterStatus === 'deactivated' && '⚫ Deactivated'}
+          </span>
+          <button
+            onClick={() => setFilterStatus('')}
+            className="inline-flex items-center px-3 py-1 text-sm font-medium text-red-600 hover:text-red-800"
+          >
+            Clear Filter ✕
+          </button>
+        </div>
+      )}
 
       <div className="bg-white border border-gray-200 shadow-sm rounded-lg overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
@@ -453,6 +552,14 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
                     <input type="date" value={formData.signUpDate} onChange={(e) => setFormData({ ...formData, signUpDate: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3" />
                   </div>
                   <div>
+                    <label className="block text-sm font-medium text-gray-700">Trial Start Date</label>
+                    <input type="date" value={formData.trialStartDate} onChange={(e) => setFormData({ ...formData, trialStartDate: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Trial End Date</label>
+                    <input type="date" value={formData.trialEndDate} onChange={(e) => setFormData({ ...formData, trialEndDate: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3" />
+                  </div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700">SaaS Start Date</label>
                     <input type="date" value={formData.saasStartDate} onChange={(e) => setFormData({ ...formData, saasStartDate: e.target.value })} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3" />
                   </div>
@@ -552,6 +659,60 @@ export default function MerchantsPage({ merchants }: MerchantsPageProps) {
                   </div>
                 </div>
               </div>
+
+              {/* Merchant Users (Read-Only) - Only shown when editing */}
+              {editingMerchant && (
+                <div className="border-t pt-4">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Associated Users</h3>
+                  {merchantUsers.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Phone</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Role</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {merchantUsers.map((user) => (
+                            <tr key={user.mappingId} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="text-sm text-gray-600">{user.email}</div>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="text-sm text-gray-600">
+                                  {user.phone ? user.phone.toString() : '-'}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                {user.role ? (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {user.role}
+                                  </span>
+                                ) : (
+                                  <span className="text-sm text-gray-400">No role</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                      <p className="mt-2 text-sm text-gray-500">No users associated with this merchant</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex justify-end space-x-4 pt-4">
                 <button type="button" onClick={handleCloseModal} disabled={isLoading} className="px-4 py-2 bg-gray-200 text-gray-800 font-bold rounded-md hover:bg-gray-300 disabled:opacity-50">Cancel</button>

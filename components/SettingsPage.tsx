@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { updateUserProfile, updateUserPassword } from '@/lib/userActions';
+import { uploadMerchantUsersCSV } from '@/lib/csvUpload';
 
 interface SettingsPageProps {
   user: {
@@ -18,6 +19,7 @@ interface SettingsPageProps {
 export default function SettingsPage({ user }: SettingsPageProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Profile form
   const [profileData, setProfileData] = useState({
@@ -31,6 +33,11 @@ export default function SettingsPage({ user }: SettingsPageProps) {
     newPassword: '',
     confirmPassword: '',
   });
+
+  // Merchant Users CSV upload
+  const [uploadMessage, setUploadMessage] = useState('');
+  const [uploadError, setUploadError] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -107,7 +114,36 @@ export default function SettingsPage({ user }: SettingsPageProps) {
     }
   };
 
+  const handleMerchantUsersCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadMessage('');
+    setUploadError('');
+
+    try {
+      const text = await file.text();
+      const result = await uploadMerchantUsersCSV(text);
+
+      if (result.success) {
+        setUploadMessage(`Success! Imported: ${result.imported}, Updated: ${result.updated}, Errors: ${result.errors}`);
+        router.refresh();
+      } else {
+        setUploadError(result.error || 'Failed to upload CSV');
+      }
+    } catch {
+      setUploadError('Failed to read CSV file');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   const isGoogleUser = user?.provider === 'google';
+  const isAdmin = user?.role === 'admin';
 
   return (
     <div className="space-y-6">
@@ -263,6 +299,71 @@ export default function SettingsPage({ user }: SettingsPageProps) {
               {isLoading ? 'Updating...' : 'Update Password'}
             </button>
           </form>
+        </div>
+      )}
+
+      {/* Merchant Users CSV Upload - Admin Only */}
+      {isAdmin && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Merchant Users Management</h2>
+          <p className="text-sm text-gray-500 mb-4">Upload a CSV file to add or update merchant users and their mappings</p>
+          
+          {uploadMessage && (
+            <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-md mb-4">
+              {uploadMessage}
+            </div>
+          )}
+
+          {uploadError && (
+            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md mb-4">
+              {uploadError}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="font-semibold text-blue-900 mb-2">CSV Format Required:</h3>
+              <code className="text-sm text-blue-800 block bg-blue-100 p-2 rounded">
+                merchant_id,name,email,phone,role
+              </code>
+              <p className="text-sm text-blue-700 mt-2">
+                <strong>Example:</strong>
+              </p>
+              <code className="text-xs text-blue-800 block bg-blue-100 p-2 rounded mt-1">
+                1,Sara Hassan,sara@example.com,5550123456,Manager<br/>
+                1,Ahmed Ali,ahmed@example.com,5550234567,Accountant<br/>
+                2,Mohammed Khan,mohammed@example.com,5550345678,Owner
+              </code>
+              <ul className="text-sm text-blue-700 mt-2 list-disc list-inside space-y-1">
+                <li><strong>merchant_id:</strong> Must match existing merchant ID</li>
+                <li><strong>name:</strong> User&apos;s full name (required)</li>
+                <li><strong>email:</strong> User&apos;s email (required, unique)</li>
+                <li><strong>phone:</strong> Phone number (optional)</li>
+                <li><strong>role:</strong> User&apos;s role (optional, e.g., Owner, Manager, Accountant)</li>
+              </ul>
+            </div>
+
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                onChange={handleMerchantUsersCSVUpload}
+                disabled={isUploading}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-green-700 file:cursor-pointer cursor-pointer disabled:opacity-50"
+              />
+            </div>
+
+            {isUploading && (
+              <div className="flex items-center text-primary">
+                <svg className="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing CSV...
+              </div>
+            )}
+          </div>
         </div>
       )}
 

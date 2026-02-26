@@ -63,14 +63,15 @@ model Merchant {
   email                   String    @unique
   phone                   BigInt?
   accountStatus           Boolean   @default(true) @map("account_status")
-  joinDate                DateTime  @map("join_date") @db.Date
   businessName            String    @map("business_name")
   category                String
   
-  // New subscription fields
+  // Subscription fields
   plan                    String?
   signUpDate              DateTime? @map("sign_up_date") @db.Date
   trialFlag               Boolean   @default(false) @map("trial_flag")
+  trialStartDate          DateTime? @map("trial_start_date") @db.Date
+  trialEndDate            DateTime? @map("trial_end_date") @db.Date
   saasStartDate           DateTime? @map("saas_start_date") @db.Date
   saasEndDate             DateTime? @map("saas_end_date") @db.Date
   
@@ -91,15 +92,46 @@ model Merchant {
   lastPaymentDueDate      DateTime? @map("last_payment_due_date") @db.Date
   retentionStatus         String?   @map("retention_status")
 
-  activities Activity[]
-  notes      Note[]
+  activities           Activity[]
+  notes                Note[]
+  merchantUserMappings MerchantUserMapping[]
 
   @@index([plan])
   @@index([retentionStatus])
   @@index([verificationStatus])
   @@index([saasEndDate])
+  @@index([trialEndDate])
   @@index([phone])
   @@map("merchants")
+}
+
+model MerchantUser {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  phone     BigInt?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  merchantMappings MerchantUserMapping[]
+
+  @@index([email])
+  @@map("merchant_users")
+}
+
+model MerchantUserMapping {
+  id         Int          @id @default(autoincrement())
+  merchantId Int          @map("merchant_id")
+  userId     Int          @map("user_id")
+  role       String?      // Optional: e.g., "Owner", "Manager", "Accountant"
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  merchant Merchant     @relation(fields: [merchantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user     MerchantUser @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([merchantId, userId]) // Prevent duplicate mappings
+  @@index([merchantId])
+  @@index([userId])
+  @@map("merchant_user_mappings")
 }
 
 // PHASE 1: Normalized Company table
@@ -237,6 +269,9 @@ model Proposal {
   title         String
   clientName    String    @map("client_name")
   clientCompany String    @map("client_company")
+  clientEmail   String?   @map("client_email")
+  clientPhone   BigInt?   @map("client_phone")
+  category      String?
   value         Decimal   @db.Decimal(10, 2)
   currency      String
   status        String
@@ -244,6 +279,9 @@ model Proposal {
   sentDate      DateTime? @map("sent_date") @db.Date
   createdAt     DateTime  @map("created_at") @db.Date
 
+  @@index([clientEmail])
+  @@index([clientPhone])
+  @@index([category])
   @@map("proposals")
 }
 
@@ -284,9 +322,9 @@ model Note {
   customerId Int?     @map("customer_id")
   merchantId Int?     @map("merchant_id")
   
-  lead     Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  merchant Merchant? @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  lead     Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  merchant Merchant? @relation(fields: [merchantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([leadId])
   @@index([customerId])
