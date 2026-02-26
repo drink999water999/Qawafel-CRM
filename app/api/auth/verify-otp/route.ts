@@ -16,6 +16,11 @@ export async function POST(request: NextRequest) {
 
     const cleanPhone = phone.replace(/\D/g, '');
 
+    // Ensure phone has country code
+    const phoneWithCountryCode = cleanPhone.startsWith('966') 
+      ? cleanPhone 
+      : `966${cleanPhone}`;
+
     // **CONFIGURE YOUR OTP PLATFORM HERE**
     // Replace with your actual OTP platform verification endpoint
     const OTP_PLATFORM_URL = process.env.OTP_PLATFORM_VERIFY_URL || 'https://your-otp-platform.com/api/verify';
@@ -29,7 +34,7 @@ export async function POST(request: NextRequest) {
         'Authorization': `Bearer ${OTP_API_KEY}`,
       },
       body: JSON.stringify({
-        phone: cleanPhone,
+        phone: `+${phoneWithCountryCode}`, // Send with + prefix
         otp: otp,
         session_id: sessionId, // If your platform uses session IDs
       }),
@@ -57,7 +62,7 @@ export async function POST(request: NextRequest) {
       process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production'
     );
 
-    const token = await new SignJWT({ phone: cleanPhone })
+    const token = await new SignJWT({ phone: phoneWithCountryCode })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('24h')
@@ -76,7 +81,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Phone verified successfully',
-      phone: cleanPhone,
+      phone: phoneWithCountryCode,
     });
 
   } catch (error) {

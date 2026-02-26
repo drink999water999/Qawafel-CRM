@@ -17,12 +17,13 @@ export default function PhoneAuth() {
     // Remove all non-digits
     const cleaned = value.replace(/\D/g, '');
     
-    // Format as needed (example: +966 XX XXX XXXX for Saudi Arabia)
-    // Adjust based on your country
-    if (cleaned.length <= 3) return cleaned;
-    if (cleaned.length <= 6) return `${cleaned.slice(0, 3)} ${cleaned.slice(3)}`;
-    if (cleaned.length <= 9) return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
-    return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6, 10)}`;
+    // Saudi format: 50 123 4567 (2-3-4 digits = 9 total)
+    if (cleaned.length === 0) return '';
+    if (cleaned.length <= 2) return cleaned;
+    if (cleaned.length <= 5) return `${cleaned.slice(0, 2)} ${cleaned.slice(2)}`;
+    if (cleaned.length <= 9) return `${cleaned.slice(0, 2)} ${cleaned.slice(2, 5)} ${cleaned.slice(5, 9)}`;
+    // Limit to 9 digits max
+    return `${cleaned.slice(0, 2)} ${cleaned.slice(2, 5)} ${cleaned.slice(5, 9)}`;
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,8 +33,17 @@ export default function PhoneAuth() {
   };
 
   const handleSendOTP = async () => {
-    if (!phone || phone.replace(/\D/g, '').length < 10) {
-      setError('Please enter a valid phone number');
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    // Saudi numbers are exactly 9 digits (5XXXXXXXX)
+    if (!phone || cleanPhone.length !== 9) {
+      setError('Please enter a valid 9-digit Saudi phone number');
+      return;
+    }
+
+    // Must start with 5
+    if (!cleanPhone.startsWith('5')) {
+      setError('Saudi mobile numbers must start with 5');
       return;
     }
 
@@ -41,10 +51,15 @@ export default function PhoneAuth() {
     setError('');
 
     try {
+      // Add country code if not present
+      const phoneWithCountryCode = cleanPhone.startsWith('966') 
+        ? cleanPhone 
+        : `966${cleanPhone}`;
+
       const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phone.replace(/\D/g, '') }),
+        body: JSON.stringify({ phone: phoneWithCountryCode }),
       });
 
       const data = await response.json();
@@ -85,11 +100,17 @@ export default function PhoneAuth() {
     setError('');
 
     try {
+      const cleanPhone = phone.replace(/\D/g, '');
+      // Add country code if not present
+      const phoneWithCountryCode = cleanPhone.startsWith('966') 
+        ? cleanPhone 
+        : `966${cleanPhone}`;
+
       const response = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone: phone.replace(/\D/g, ''),
+          phone: phoneWithCountryCode,
           otp,
           sessionId,
         }),
@@ -210,7 +231,7 @@ export default function PhoneAuth() {
             type="tel"
             value={phone}
             onChange={handlePhoneChange}
-            placeholder="XX XXX XXXX"
+            placeholder="5X XXX XXXX"
             className="w-full pl-16 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
           />
         </div>
